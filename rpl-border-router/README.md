@@ -2,7 +2,6 @@
 
 This is the Contiki-NG border router. It supports two main modes of operation: embedded and native. In both cases, the border router runs a simple Web server that exposes a list of currently connected nodes via HTTP.
 
-See the RPL border router tutorial
 # Embedded border router
 
 The embedded border router runs on a node. It is connected to the host via SLIP. The host simply runs a tun gateway (tunslip6). To use, program a node, and then start tunslip6 on the host via the make command connect-router. See embedded/README.md for more.
