@@ -18,17 +18,9 @@ sql = "INSERT INTO air_quality_data (value, type, timestamp) VALUES (%s, %s, %s)
 
 # ------------------------------------------------------------------------------------
 # Callback per la connessione al broker MQTT
-def on_connect_pm25(client, userdata, flags, rc):
-    print("Connesso al topic PM2.5 con codice: " + str(rc))
-    client.subscribe("airclean/pm25")
-
-def on_connect_co2(client, userdata, flags, rc):
-    print("Connesso al topic CO2 con codice: " + str(rc))
-    client.subscribe("airclean/co2")
-
-def on_connect_temperature(client, userdata, flags, rc):
-    print("Connesso al topic Temperatura con codice: " + str(rc))
-    client.subscribe("airclean/temperature")
+def on_connect(client, userdata, flags, rc):
+    print("Connesso al broker MQTT con codice: " + str(rc))
+    client.subscribe("sensor/temp_co2_sal")  # Iscrizione al topic del sensore
 
 # ------------------------------------------------------------------------------------
 # Callback per la ricezione dei messaggi
@@ -36,36 +28,36 @@ def on_message(client, userdata, msg):
     print(f"Messaggio ricevuto dal topic {msg.topic}: {msg.payload.decode('utf-8', 'ignore')}")
     
     # Decodifica del messaggio JSON
-    json_payload = json.loads(msg.payload.decode("utf-8", "ignore"))
-    value = float(json_payload.get("value", 0))
-    timestamp = json_payload.get("timestamp", None)
+    try:
+        json_payload = json.loads(msg.payload.decode("utf-8", "ignore"))
+        temperature = float(json_payload.get("temperature", 0))
+        co2 = float(json_payload.get("co2", 0))
+        pm = float(json_payload.get("pm", 0))
+        timestamp = json_payload.get("timestamp", None)  # Aggiungi timestamp se presente
 
-    # Inserimento dei dati nel database
-    if msg.topic == "airclean/pm25":
-        val_pm25 = (value, "PM2.5", timestamp)
-        mycursor.execute(sql, val_pm25)
-    elif msg.topic == "airclean/co2":
-        val_co2 = (value, "CO2", timestamp)
-        mycursor.execute(sql, val_co2)
-    elif msg.topic == "airclean/temperature":
-        val_temp = (value, "Temperature", timestamp)
+        # Inserimento dei dati nel database
+        val_temp = (temperature, "Temperature", timestamp)
+        val_co2 = (co2, "CO2", timestamp)
+        val_pm = (pm, "PM2.5", timestamp)
+
         mycursor.execute(sql, val_temp)
+        mycursor.execute(sql, val_co2)
+        mycursor.execute(sql, val_pm)
 
-    # Conferma delle modifiche nel database
-    mydb.commit()
+        # Conferma delle modifiche nel database
+        mydb.commit()
+        print("Dati salvati nel database con successo.")
+
+    except json.JSONDecodeError as e:
+        print(f"Errore nella decodifica del messaggio JSON: {e}")
+    except Exception as e:
+        print(f"Errore durante l'inserimento nel database: {e}")
 
 # ------------------------------------------------------------------------------------
-# Mappatura dei topic ai callback di connessione
-on_connect_callbacks = {
-    "pm25": on_connect_pm25,
-    "co2": on_connect_co2,
-    "temperature": on_connect_temperature
-}
-
 # Configurazione del client MQTT
-def mqtt_client(topic):
+def mqtt_client():
     client = mqtt.Client()
-    client.on_connect = on_connect_callbacks[topic]
+    client.on_connect = on_connect
     client.on_message = on_message
     client.connect("127.0.0.1", 1883, 60)  # Connessione al broker MQTT
     client.loop_forever()  # Loop infinito per ricevere messaggi
@@ -73,14 +65,8 @@ def mqtt_client(topic):
 # ------------------------------------------------------------------------------------
 # Funzione principale
 def main():
-    thread_pm25 = Thread(target=mqtt_client, args=("pm25",))
-    thread_co2 = Thread(target=mqtt_client, args=("co2",))
-    thread_temperature = Thread(target=mqtt_client, args=("temperature",))
-    
-    # Avvio dei thread
-    thread_pm25.start()
-    thread_co2.start()
-    thread_temperature.start()
+    thread = Thread(target=mqtt_client)
+    thread.start()
 
 if __name__ == '__main__':
     main()
