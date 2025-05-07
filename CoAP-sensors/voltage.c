@@ -89,7 +89,7 @@ void client_chunk_handler(coap_message_t *response){//
      COAP_BLOCKING_REQUEST(&main_server_ep, request, client_chunk_handler);
  
      /* -------------- END REGISTRATION --------------*/
-     if (max_registration_retry == -1){ // something goes wrong more MAX_REGISTRATION_RETRY times, node goes to sleep then try again
+     if (max_registration_retry == -1){ //if something goes wrong more than "MAX_REGISTRATION_RETRY" times then the node goes to sleep then try again
        etimer_set(&sleep_timer, 30 * CLOCK_SECOND);
        PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&sleep_timer));
        max_registration_retry = MAX_REGISTRATION_RETRY;
