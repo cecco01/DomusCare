@@ -140,8 +140,10 @@ void invia_richiesta_coap(const char *nome_dispositivo) {
     static coap_endpoint_t server_ep;
     static coap_message_t request[1]; // CoAP request
     char payload[256];
-
-    snprintf(payload, sizeof(payload), "{\"dispositivo\": \"%s\", \"stato\": \"pronto\"}", nome_dispositivo);
+    char *ip_address = "fd00::1"; // Indirizzo IPv6 del server CoAP
+    char *port = "5683"; // Porta del server CoAP
+    
+    snprintf(payload, sizeof(payload), "%s", nome_dispositivo);
 
     // Configura l'endpoint del server CoAP
     coap_endpoint_parse("coap://[fd00::1]:5683", strlen("coap://[fd00::1]:5683"), &server_ep);
