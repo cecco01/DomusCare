@@ -58,8 +58,8 @@ conn.close()
 print("Dati caricati nel database con successo!")
 
 # Suddivisione in training e test set
-X_train, X_test, y_train_consumption, y_test_consumption = train_test_split(X, y_consumption, test_size=0.2, random_state=42)
-_, _, y_train_solar, y_test_solar = train_test_split(X, y_solar, test_size=0.2, random_state=42)
+X_train, X_test, y_train_consumption, y_test_consumption = train_test_split(X, y_consumption, test_size=0.25, random_state=42)
+_, _, y_train_solar, y_test_solar = train_test_split(X, y_solar, test_size=0.25, random_state=42)
 
 # Creazione del modello di rete neurale per la potenza consumata
 model_consumption = Sequential([
