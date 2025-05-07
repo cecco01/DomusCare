@@ -16,8 +16,8 @@ data['day'] = data['time'].dt.day  # Estrazione del giorno
 data['month'] = data['time'].dt.month  # Estrazione del mese
 data['year'] = data['time'].dt.year  # Estrazione dell'anno
 
-# Selezione delle feature: data (giorno, mese, anno), ora, tensione, corrente, potenza
-X = data[['year', 'month', 'day', 'hour', 'Voltage (V)', 'Current (A)', 'Power Consumption (kW)']]
+# Selezione delle feature: data (giorno, mese, anno), ora, tensione, corrente, potenza, prezzo dell'energia
+X = data[['year', 'month', 'day', 'hour', 'Voltage (V)', 'Current (A)', 'Power Consumption (kW)', 'Electricity Price (USD/kWh)']]
 y = data['Power Consumption (kW)']  # Target: potenza consumata
 
 # Suddivisione in training e test set

@@ -24,13 +24,18 @@ DROP TABLE IF EXISTS data;
 -- Create the data table
 CREATE TABLE data (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    voltage FLOAT NOT NULL,
-    ampere FLOAT NOT NULL,
-    power FLOAT NOT NULL,
-    panel_power FLOAT NOT NULL
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp dei dati
+    year INT NOT NULL,                             -- Anno
+    month INT NOT NULL,                            -- Mese
+    day INT NOT NULL,                              -- Giorno
+    hour INT NOT NULL,                             -- Ora
+    voltage FLOAT NOT NULL,                        -- Tensione (V)
+    current FLOAT NOT NULL,                        -- Corrente (A)
+    power FLOAT NOT NULL,                          -- Potenza consumata (kW)
+    price FLOAT NOT NULL                           -- Prezzo dell'energia (USD/kWh)
 );
 
+-- Drop the failures table if it exists
 DROP TABLE IF EXISTS failures;
 
 -- Create the failures table
