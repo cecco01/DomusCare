@@ -150,8 +150,6 @@ static double delta_co2 = 0.1;
 static double delta_pm = 0.5;
 
 
-
-
 static double mean_co2 = 2.9;
 static double stddev_co2 = 0.02;
 static double mean_pm = 2.5;
@@ -166,12 +164,12 @@ static double current_pm = 0;
 static double current_temp = 0;
 
 /* Array of topics to subscribe to */
-static const char* topics[] = {"params/temperature", "params/co2", "params/pm", "pickling"}; 
+static const char* topics[] = {"params/temperature", "params/co2", "params/pm", "topicname"}; 
 #define NUM_TOPICS 3
 static int current_topic_index = 0; // Index of the current topic being subscribed to
 static int count_sensor_interval = 0;//counter to check the number of times the sensor is activated
 static bool warning_status_active = false; //flag to check if the warning is active
-static bool start = false; //flag to check if the pickling process is started. 
+static bool start = false; //flag to check if the topicname process is started. 
 static bool first_publication = true; //flag to check if it is the first publication
 
 static char payload[BUFFER_SIZE];
@@ -243,7 +241,6 @@ void replace_comma_with_dot(char *str) {
     }
 }
 
-//to be continued...!!!!
 
 //function that is called by the timer to check the state of the MQTT client
 static void sensor_callback(void *ptr){
@@ -251,7 +248,7 @@ static void sensor_callback(void *ptr){
         return;
     leds_off(LEDS_BLUE);
     leds_off(LEDS_RED);
-    leds_on(LEDS_GREEN);//NB: LEDS_GREEN is used to indicate that the sensor is active and the values are being sensed
+    leds_on(LEDS_GREEN);//NB: LEDS_GREEN is used to indicate that the sensor is ACTIVE and the values are being sensed
 
     // Generate random values for temperature, co2 and pm2,5
     current_temp = generate_random_temp();
@@ -504,3 +501,205 @@ static void sensor_callback(void *ptr){
         }
     }
 }
+
+/*---------------------------------------------------------------------------*/
+
+PROCESS(sensor_co2, "MQTT sensor_co2");
+AUTOSTART_PROCESSES(&sensor_co2);
+
+//function called when the broker sends a message to the topic "topicname"
+static void pub_handler_start(const char *topic, uint16_t topic_len, const uint8_t *chunk, uint16_t chunk_len){
+    memcpy(payload, chunk, chunk_len);
+    payload[chunk_len] = '\0';//add the null terminator to the string
+    cJSON *json = cJSON_Parse(payload);
+    cJSON *str = cJSON_GetObjectItem(json, "value");//get the value of the "value" field in the JSON object
+    if(str){
+        if(state == STATE_WAITSTART && strcmp(str->valuestring, "start") == 0){//if the "value" field is "start" then we start the topicname process
+            LOG_INFO("Start topicname process\n");
+            state = STATE_START;
+        }
+        else if(state == STATE_START && strcmp(str->valuestring, "stop") == 0){//if the "value" field is "stop" then we stop the topicname process
+            LOG_INFO("Stop topicname process\n");
+            state = STATE_STOP;
+        }
+    }
+}
+
+
+static void button_callback_handler(){//simulation of "measure variation"
+    if(state == STATE_START)//if the sensor is active, by pressing thhe button we change the value simulated by the sensor
+      generated_value = !generated_value; 
+}
+
+
+//callback function to handle different events of the MQTT client
+static void mqtt_event(struct mqtt_connection *m, mqtt_event_t event, void *data){
+    switch(event) {
+    case MQTT_EVENT_CONNECTED: {
+      LOG_INFO("Application has a MQTT connection\n");
+      state = STATE_CONNECTED;
+      break;
+    }
+    case MQTT_EVENT_DISCONNECTED: {
+      LOG_INFO("MQTT Disconnect. Reason %u\n", *((mqtt_event_t *)data));
+      state = STATE_DISCONNECTED;
+      process_poll(&sensor_co2);
+      break;
+    }
+    case MQTT_EVENT_PUBLISH: {//callback function to handle the event of receiving a message from the broker
+      msg_ptr = data;
+  
+      if (strcmp(msg_ptr->topic, "topicname") == 0)//if the topic is "topicname" then we call the function to handle the message
+          pub_handler_start(msg_ptr->topic, strlen(msg_ptr->topic), msg_ptr->payload_chunk, msg_ptr->payload_length);
+  
+      break;
+    }
+    case MQTT_EVENT_SUBACK: {//callback function to handle the event of subscribing to a topic
+  #if MQTT_311
+      mqtt_suback_event_t *suback_event = (mqtt_suback_event_t *)data;
+  
+      if(suback_event->success) {
+        LOG_INFO("Application is subscribed to topic successfully\n");
+      } else {
+        LOG_INFO("Application failed to subscribe to topic (ret code %x)\n", suback_event->return_code);
+      }
+  #else
+      LOG_INFO("Application is subscribed to topic successfully\n");
+  #endif
+      
+      break;
+    }
+    case MQTT_EVENT_UNSUBACK: {//callback function to handle the event of unsubscribing from a topic
+      LOG_INFO("Application is unsubscribed to topic successfully\n");
+      break;
+    }
+    case MQTT_EVENT_PUBACK: {//callback function to handle the event of publishing a message to a topic
+      LOG_INFO("Publishing complete.\n");
+      leds_on(LEDS_BLUE);
+      leds_off(LEDS_RED);
+      leds_off(LEDS_GREEN);    
+      break;
+    }
+    default://callback function to handle the event of an unhandled MQTT event
+      LOG_INFO("Application got a unhandled MQTT event: %i\n", event);
+      break;
+    }
+  }
+  
+
+  static bool have_connectivity(void){//check if the node has connectivity IPv6
+    if(uip_ds6_get_global(ADDR_PREFERRED) == NULL || uip_ds6_defrt_choose() == NULL) { //verify if the node has a global address and a default router
+      return false;
+    }
+    return true;
+  }
+  
+
+  PROCESS_THREAD(sensor_co2, ev, data){
+    PROCESS_BEGIN();
+  
+      leds_off(LEDS_BLUE);
+      leds_on(LEDS_RED);
+      leds_on(LEDS_GREEN);
+  
+    LOG_INFO("MQTT-Sensor-co2 started\n");
+  
+  
+    // Initialize the ClientID as MAC address
+    snprintf(client_id, BUFFER_SIZE, "%02x%02x%02x%02x%02x%02x",
+                       linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1],
+                       linkaddr_node_addr.u8[2], linkaddr_node_addr.u8[5],
+                       linkaddr_node_addr.u8[6], linkaddr_node_addr.u8[7]);
+  
+    // Broker registration
+    mqtt_register(&conn, &sensor_co2, client_id, mqtt_event, MAX_TCP_SEGMENT_SIZE);
+    
+    state = STATE_INIT;
+  
+    // Initialize periodic timer to check the status 
+    etimer_set(&periodic_timer, STATE_MACHINE_PERIODIC);
+  
+    /* Main loop */
+    while (1) {
+      PROCESS_YIELD();
+  
+      if ((ev == PROCESS_EVENT_TIMER && data == &periodic_timer) || ev == PROCESS_EVENT_POLL || (ev == PROCESS_EVENT_TIMER && data == &reconnection_timer)) {//check the type of event
+        if (state == STATE_INIT) {//check connectivity
+          if (have_connectivity() == true)  
+            state = STATE_NET_OK;
+        } 
+        
+        if (state == STATE_NET_OK) {// Connect to MQTT server
+          LOG_INFO("Connecting!\n");
+          leds_off(LEDS_BLUE);
+          leds_on(LEDS_RED);
+          leds_on(LEDS_GREEN);
+          memcpy(broker_address, broker_ip, strlen(broker_ip));
+          mqtt_connect(&conn, broker_address, DEFAULT_BROKER_PORT, (DEFAULT_PUBLISH_INTERVAL * 3) / CLOCK_SECOND, MQTT_CLEAN_SESSION_ON);
+          state = STATE_CONNECTING;
+        }
+        
+  
+        if (state == STATE_CONNECTED) {
+          strcpy(sub_topic, "topicname");
+          status = mqtt_subscribe(&conn, NULL, sub_topic, MQTT_QOS_LEVEL_0);//subscribe to the topic "topicname" (nome da scegliere!!)
+          LOG_INFO("Subscribing to %s topic!\n", sub_topic);
+
+          if(status == MQTT_STATUS_OUT_QUEUE_FULL) {
+              LOG_ERR("Tried to subscribe to %s topic but command queue was full!\n", sub_topic);
+              PROCESS_EXIT();
+          }
+
+          if(!start){//waiting for the start command from the broker
+            state=STATE_WAITSTART;
+            LOG_INFO("Waiting for start command for co2 sensor\n");
+            leds_off(LEDS_BLUE);
+            leds_on(LEDS_RED);
+            leds_off(LEDS_GREEN);
+          }
+
+          else{
+            state=STATE_START;
+            first_time = true;
+          }
+        }
+  
+        if(state == STATE_START){
+          if(first_time){
+              ctimer_set(&co2_sensor_timer, SENSOR_INTERVAL, sensor_callback, NULL);
+              first_time = false;
+              first_publication = true;
+              start = true;
+              leds_off(LEDS_BLUE);
+              leds_off(LEDS_RED);
+              leds_on(LEDS_GREEN);
+              LOG_INFO("Sensor co2 started successfully \n");
+          }
+        }
+        else if(state == STATE_STOP){
+          ctimer_stop(&co2_sensor_timer);
+          start = false;
+          first_time = true;
+          warning_status_active = false;
+          count_sensor_interval = 0;
+          leds_off(LEDS_BLUE);
+            leds_on(LEDS_RED);
+            leds_off(LEDS_GREEN);
+          state = STATE_WAITSTART;
+          LOG_INFO("Sensor co2 stopped successfully\n");
+        }
+        else if (state == STATE_DISCONNECTED) {
+          LOG_ERR("Disconnected from MQTT broker\n");
+          state = STATE_INIT;
+          etimer_set(&reconnection_timer, RECONNECT_DELAY_MS);
+          continue;
+  
+        }
+        etimer_set(&periodic_timer, STATE_MACHINE_PERIODIC);
+      }
+      else if(ev == button_hal_press_event){
+        button_callback_handler();
+      }
+    }
+    PROCESS_END();
+  }
