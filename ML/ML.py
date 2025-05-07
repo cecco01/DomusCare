@@ -12,10 +12,13 @@ data = pd.read_csv('smart_grid_dataset.csv')  # Sostituisci con il percorso corr
 # Preprocessing dei dati
 data['time'] = pd.to_datetime(data['Timestamp'])  # Conversione della colonna Timestamp in datetime
 data['hour'] = data['time'].dt.hour  # Estrazione dell'ora dal timestamp
+data['day'] = data['time'].dt.day  # Estrazione del giorno
+data['month'] = data['time'].dt.month  # Estrazione del mese
+data['year'] = data['time'].dt.year  # Estrazione dell'anno
 
-# Selezione delle feature: time (ora), voltage, corrente, potenza
-X = data[['time', 'hour', 'voltage', 'current', 'power']]  # Aggiunta della colonna 'time'
-y = data['load']  # Target: carico energetico
+# Selezione delle feature: data (giorno, mese, anno), ora, tensione, corrente, potenza
+X = data[['year', 'month', 'day', 'hour', 'Voltage (V)', 'Current (A)', 'Power Consumption (kW)']]
+y = data['Power Consumption (kW)']  # Target: potenza consumata
 
 # Suddivisione in training e test set
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
