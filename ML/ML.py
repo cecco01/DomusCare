@@ -5,7 +5,7 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout
 import emlearn
-import sqlite3  # Libreria per interagire con SQLite
+import mysql.connector  # Libreria per interagire con MySQL
 
 # Caricamento del dataset
 data = pd.read_csv('smart_grid_dataset.csv')  # Sostituisci con il percorso corretto del dataset
@@ -21,22 +21,27 @@ data['year'] = data['time'].dt.year  # Estrazione dell'anno
 X = data[['year', 'month', 'day', 'hour', 'Voltage (V)', 'Current (A)', 'Electricity Price (USD/kWh)']]
 y = data['Power Consumption (kW)']  # Target: potenza consumata
 
-# Caricamento dei dati nel database SQLite
-conn = sqlite3.connect('database.db')  # Connessione al database SQLite
+# Connessione al database MySQL
+conn = mysql.connector.connect(
+    host="localhost",       # Sostituisci con l'host del tuo server MySQL
+    user="Luca",      # Sostituisci con il tuo nome utente MySQL
+    password="Luca",# Sostituisci con la tua password MySQL
+    database="iot"          # Sostituisci con il nome del tuo database
+)
 cursor = conn.cursor()
 
 # Creazione della tabella se non esiste
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS data (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    year INTEGER NOT NULL,
-    month INTEGER NOT NULL,
-    day INTEGER NOT NULL,
-    hour INTEGER NOT NULL,
-    voltage REAL NOT NULL,
-    current REAL NOT NULL,
-    price REAL NOT NULL,
-    power REAL NOT NULL
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    year INT NOT NULL,
+    month INT NOT NULL,
+    day INT NOT NULL,
+    hour INT NOT NULL,
+    voltage FLOAT NOT NULL,
+    current FLOAT NOT NULL,
+    price FLOAT NOT NULL,
+    power FLOAT NOT NULL
 )
 ''')
 
@@ -44,7 +49,7 @@ CREATE TABLE IF NOT EXISTS data (
 for _, row in data.iterrows():
     cursor.execute('''
     INSERT INTO data (year, month, day, hour, voltage, current, price, power)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     ''', (row['year'], row['month'], row['day'], row['hour'], row['Voltage (V)'], row['Current (A)'], row['Electricity Price (USD/kWh)'], row['Power Consumption (kW)']))
 
 conn.commit()
