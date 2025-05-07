@@ -7,7 +7,7 @@ from tensorflow.keras.layers import Dense, Dropout
 import emlearn
 
 # Caricamento del dataset
-data = pd.read_csv('smart_grid.csv')  # Sostituisci con il percorso corretto del dataset
+data = pd.read_csv('smart_grid_dataset.csv')  # Sostituisci con il percorso corretto del dataset
 
 # Preprocessing dei dati
 data['time'] = pd.to_datetime(data['time'])
