@@ -1,14 +1,41 @@
--- Creazione del database e della tabella
-CREATE DATABASE IF NOT EXISTS SMART_HOME; -- Crea il database se non esiste già
-USE SMART_HOME; -- Seleziona il database
+-- Drop the database if it exists
+DROP DATABASE IF EXISTS iot;
 
-CREATE TABLE IF NOT EXISTS data_table (
-    id INTEGER PRIMARY KEY AUTOINCREMENT, -- ID univoco per ogni riga
-    year INTEGER NOT NULL,                -- Anno
-    month INTEGER NOT NULL,               -- Mese
-    day INTEGER NOT NULL,                 -- Giorno
-    hour INTEGER NOT NULL,                -- Ora
-    voltage REAL NOT NULL,                -- Tensione (V)
-    current REAL NOT NULL,                -- Corrente (A)
-    power REAL NOT NULL                   -- Potenza (kW)
+-- Create the database
+CREATE DATABASE iot;
+
+-- Use the created database
+USE iot;
+
+-- Drop the sensor table if it exists
+DROP TABLE IF EXISTS sensor;
+
+-- Create the sensor table
+CREATE TABLE sensor (
+    ip_address VARCHAR(45) PRIMARY KEY,
+    type VARCHAR(45),
+    status INT,
+    registration_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Drop the data table if it exists
+DROP TABLE IF EXISTS data;
+
+-- Create the data table
+CREATE TABLE data (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    voltage FLOAT NOT NULL,
+    ampere FLOAT NOT NULL,
+    power FLOAT NOT NULL,
+    panel_power FLOAT NOT NULL
+);
+
+DROP TABLE IF EXISTS failures;
+
+-- Create the failures table
+CREATE TABLE failures (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    component VARCHAR(45),
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
