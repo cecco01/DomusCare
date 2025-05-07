@@ -44,3 +44,22 @@ CREATE TABLE failures (
     component VARCHAR(45),
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Drop the dispositivi table if it exists
+DROP TABLE IF EXISTS dispositivi;
+
+-- Create the dispositivi table
+CREATE TABLE dispositivi (
+    nome VARCHAR(255) PRIMARY KEY,
+    tipo VARCHAR(255) NOT NULL,
+    stato INT NOT NULL DEFAULT 0,  -- 2=pronto, 1=attivo, 0=inattivo
+    consumo_kwh FLOAT NOT NULL,    -- Consumo in kWh
+    durata INT NOT NULL            -- Durata in minuti
+);
+
+-- Inserimento di dati plausibili nella tabella dispositivi
+INSERT INTO dispositivi (nome, tipo, stato, consumo_kwh, durata) VALUES
+('Lavatrice', 'Lavatrice', 0, 1.5, 60),
+('Asciugatrice', 'Asciugatrice', 0, 2.0, 90),
+('Lavastoviglie', 'Lavastoviglie', 0, 1.2, 45);
+
