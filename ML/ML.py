@@ -5,6 +5,7 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout
 import emlearn
+import sqlite3  # Libreria per interagire con SQLite
 
 # Caricamento del dataset
 data = pd.read_csv('smart_grid_dataset.csv')  # Sostituisci con il percorso corretto del dataset
@@ -16,9 +17,39 @@ data['day'] = data['time'].dt.day  # Estrazione del giorno
 data['month'] = data['time'].dt.month  # Estrazione del mese
 data['year'] = data['time'].dt.year  # Estrazione dell'anno
 
-# Selezione delle feature: data (giorno, mese, anno), ora, tensione, corrente, potenza, prezzo dell'energia
-X = data[['year', 'month', 'day', 'hour', 'Voltage (V)', 'Current (A)', 'Power Consumption (kW)', 'Electricity Price (USD/kWh)']]
+# Selezione delle feature: data (giorno, mese, anno), ora, tensione, corrente, prezzo dell'energia
+X = data[['year', 'month', 'day', 'hour', 'Voltage (V)', 'Current (A)', 'Electricity Price (USD/kWh)']]
 y = data['Power Consumption (kW)']  # Target: potenza consumata
+
+# Caricamento dei dati nel database SQLite
+conn = sqlite3.connect('database.db')  # Connessione al database SQLite
+cursor = conn.cursor()
+
+# Creazione della tabella se non esiste
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS data (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    year INTEGER NOT NULL,
+    month INTEGER NOT NULL,
+    day INTEGER NOT NULL,
+    hour INTEGER NOT NULL,
+    voltage REAL NOT NULL,
+    current REAL NOT NULL,
+    price REAL NOT NULL,
+    power REAL NOT NULL
+)
+''')
+
+# Inserimento dei dati nel database
+for _, row in data.iterrows():
+    cursor.execute('''
+    INSERT INTO data (year, month, day, hour, voltage, current, price, power)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (row['year'], row['month'], row['day'], row['hour'], row['Voltage (V)'], row['Current (A)'], row['Electricity Price (USD/kWh)'], row['Power Consumption (kW)']))
+
+conn.commit()
+conn.close()
+print("Dati caricati nel database con successo!")
 
 # Suddivisione in training e test set
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
