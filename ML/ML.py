@@ -19,7 +19,8 @@ data['year'] = data['time'].dt.year  # Estrazione dell'anno
 
 # Selezione delle feature: data (giorno, mese, anno), ora, tensione, corrente, prezzo dell'energia
 X = data[['year', 'month', 'day', 'hour', 'Voltage (V)', 'Current (A)', 'Electricity Price (USD/kWh)']]
-y = data['Power Consumption (kW)']  # Target: potenza consumata
+y_consumption = data['Power Consumption (kW)']  # Target: potenza consumata
+y_solar = data['Solar Power (kW)']  # Target: potenza emessa dai pannelli solari
 
 # Connessione al database MySQL
 conn = mysql.connector.connect(
@@ -57,28 +58,50 @@ conn.close()
 print("Dati caricati nel database con successo!")
 
 # Suddivisione in training e test set
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_test, y_train_consumption, y_test_consumption = train_test_split(X, y_consumption, test_size=0.2, random_state=42)
+_, _, y_train_solar, y_test_solar = train_test_split(X, y_solar, test_size=0.2, random_state=42)
 
-# Creazione del modello di rete neurale
-model = Sequential([
+# Creazione del modello di rete neurale per la potenza consumata
+model_consumption = Sequential([
     Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
     Dropout(0.2),
     Dense(32, activation='relu'),
     Dense(1)  # Output: previsione della potenza consumata
 ])
 
-model.compile(optimizer='adam', loss='mse', metrics=['mae'])
+model_consumption.compile(optimizer='adam', loss='mse', metrics=['mae'])
 
-# Addestramento del modello
-model.fit(X_train, y_train, epochs=50, batch_size=32, validation_split=0.2)
+# Addestramento del modello per la potenza consumata
+model_consumption.fit(X_train, y_train_consumption, epochs=50, batch_size=32, validation_split=0.2)
 
-# Valutazione del modello
-loss, mae = model.evaluate(X_test, y_test)
-print(f"Mean Absolute Error: {mae}")
+# Valutazione del modello per la potenza consumata
+loss_consumption, mae_consumption = model_consumption.evaluate(X_test, y_test_consumption)
+print(f"Mean Absolute Error (Consumo): {mae_consumption}")
 
-# Conversione del modello in formato C per dispositivi IoT
-path = 'smart_grid_model.h'
-cmodel = emlearn.convert(model, method='inline')
-cmodel.save(file=path, name='smart_grid_model')
+# Creazione del modello di rete neurale per la potenza solare
+model_solar = Sequential([
+    Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
+    Dropout(0.2),
+    Dense(32, activation='relu'),
+    Dense(1)  # Output: previsione della potenza solare
+])
 
-print(f"Modello convertito e salvato in formato C: {path}")
+model_solar.compile(optimizer='adam', loss='mse', metrics=['mae'])
+
+# Addestramento del modello per la potenza solare
+model_solar.fit(X_train, y_train_solar, epochs=50, batch_size=32, validation_split=0.2)
+
+# Valutazione del modello per la potenza solare
+loss_solar, mae_solar = model_solar.evaluate(X_test, y_test_solar)
+print(f"Mean Absolute Error (Potenza Solare): {mae_solar}")
+
+# Conversione dei modelli in formato C per dispositivi IoT
+path_consumption = 'smart_grid_model_consumption.h'
+cmodel_consumption = emlearn.convert(model_consumption, method='inline')
+cmodel_consumption.save(file=path_consumption, name='smart_grid_model_consumption')
+
+path_solar = 'smart_grid_model_solar.h'
+cmodel_solar = emlearn.convert(model_solar, method='inline')
+cmodel_solar.save(file=path_solar, name='smart_grid_model_solar')
+
+print(f"Modelli convertiti e salvati in formato C: {path_consumption}, {path_solar}")

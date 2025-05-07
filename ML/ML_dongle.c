@@ -2,7 +2,7 @@
 #include <sqlite3.h> // Libreria per SQLite
 #include "smart_grid_model.h" // Include il modello generato
 
-#define DB_PATH "database.db" // Percorso al database SQLite
+#define DB_PATH "../database/database.db" // Percorso al database SQLite
 #define QUERY "SELECT year, month, day, hour, voltage, current, power FROM data_table ORDER BY id DESC LIMIT 100"
 
 int main() {
