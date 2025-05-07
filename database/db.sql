@@ -12,4 +12,3 @@ CREATE TABLE IF NOT EXISTS data_table (
     current REAL NOT NULL,                -- Corrente (A)
     power REAL NOT NULL                   -- Potenza (kW)
 );
-
