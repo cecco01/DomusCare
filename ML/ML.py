@@ -14,8 +14,8 @@ data['time'] = pd.to_datetime(data['time'])
 data['hour'] = data['time'].dt.hour
 data['day_of_week'] = data['time'].dt.dayofweek
 
-# Feature e target
-X = data[['hour', 'day_of_week', 'generation']]  # Aggiungi altre feature rilevanti
+# Selezione delle feature: time (ora), voltage, corrente, potenza
+X = data[['hour', 'voltage', 'current', 'power']]  # Sostituisci con i nomi corretti delle colonne
 y = data['load']  # Target: carico energetico
 
 # Suddivisione in training e test set
@@ -32,7 +32,7 @@ model = Sequential([
 model.compile(optimizer='adam', loss='mse', metrics=['mae'])
 
 # Addestramento del modello
-model.fit(X_train, y_train, epochs=50, batch_size=32, validation_split=0.2)
+model.fit(X_train, y_train, epochs=100, batch_size=32, validation_split=0.2)
 
 # Valutazione del modello
 loss, mae = model.evaluate(X_test, y_test)
