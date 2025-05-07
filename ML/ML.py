@@ -10,12 +10,11 @@ import emlearn
 data = pd.read_csv('smart_grid_dataset.csv')  # Sostituisci con il percorso corretto del dataset
 
 # Preprocessing dei dati
-data['time'] = pd.to_datetime(data['time'])
-data['hour'] = data['time'].dt.hour
-data['day_of_week'] = data['time'].dt.dayofweek
+data['time'] = pd.to_datetime(data['Timestamp'])  # Conversione della colonna Timestamp in datetime
+data['hour'] = data['time'].dt.hour  # Estrazione dell'ora dal timestamp
 
 # Selezione delle feature: time (ora), voltage, corrente, potenza
-X = data[['hour', 'voltage', 'current', 'power']]  # Sostituisci con i nomi corretti delle colonne
+X = data[['time', 'hour', 'voltage', 'current', 'power']]  # Aggiunta della colonna 'time'
 y = data['load']  # Target: carico energetico
 
 # Suddivisione in training e test set
@@ -26,13 +25,13 @@ model = Sequential([
     Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
     Dropout(0.2),
     Dense(32, activation='relu'),
-    Dense(1)  # Output: previsione del carico
+    Dense(1)  # Output: previsione della potenza consumata
 ])
 
 model.compile(optimizer='adam', loss='mse', metrics=['mae'])
 
 # Addestramento del modello
-model.fit(X_train, y_train, epochs=100, batch_size=32, validation_split=0.2)
+model.fit(X_train, y_train, epochs=50, batch_size=32, validation_split=0.2)
 
 # Valutazione del modello
 loss, mae = model.evaluate(X_test, y_test)
