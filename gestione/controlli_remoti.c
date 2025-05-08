@@ -61,56 +61,41 @@ void mostra_dispositivi(MYSQL *conn) {
     mysql_free_result(res);
 }
 
+void invia_richiesta_coap(const char *nome_dispositivo, int nuovo_stato, int ore) {
+    static coap_endpoint_t server_ep;
+    static coap_message_t request[1]; // CoAP request
+    char payload[256];
+    char *ip_address = "fd00::1"; // Indirizzo IPv6 del server CoAP
+    char *port = "5683"; // Porta del server CoAP
+
+    // Creazione del payload JSON
+    snprintf(payload, sizeof(payload), "{\"nome\": \"%s\", \"stato\": %d, \"tempo_limite\": %d}", nome_dispositivo, nuovo_stato, ore);
+
+    // Configura l'endpoint del server CoAP
+    coap_endpoint_parse("coap://[fd00::1]:5683", strlen("coap://[fd00::1]:5683"), &server_ep);
+
+    // Inizializza il messaggio CoAP
+    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
+    coap_set_header_uri_path(request, "gestione");
+    coap_set_payload(request, (uint8_t *)payload, strlen(payload));
+
+    // Invia la richiesta CoAP
+    printf("Invio richiesta CoAP al server: %s\n", payload);
+    COAP_BLOCKING_REQUEST(&server_ep, request, NULL);
+
+    printf("Richiesta CoAP inviata con successo.\n");
+}
+
 void cambia_stato_dispositivo(MYSQL *conn, const char *nome, int nuovo_stato, int ore) {
     if (!dispositivo_esiste(conn, nome)) {
         printf("Errore: Il dispositivo '%s' non esiste nel database.\n", nome);
         return;
     }
 
-    // Verifica lo stato attuale del dispositivo
-    char query[256];
-    snprintf(query, sizeof(query), "SELECT stato FROM dispositivi WHERE nome = '%s'", nome);
+    // Invia la richiesta CoAP al server
+    invia_richiesta_coap(nome, nuovo_stato, ore);
 
-    if (mysql_query(conn, query)) {
-        printf("Errore nella query per ottenere lo stato: %s\n", mysql_error(conn));
-        return;
-    }
-
-    MYSQL_RES *res = mysql_store_result(conn);
-    if (res == NULL) {
-        printf("Errore nel recupero dei risultati: %s\n", mysql_error(conn));
-        return;
-    }
-
-    MYSQL_ROW row = mysql_fetch_row(res);
-    int stato_attuale = atoi(row[0]);
-    mysql_free_result(res);
-
-    // Cambia stato solo se lo stato attuale è 0
-    if (stato_attuale != 0) {
-        printf("Errore: Il dispositivo '%s' non è inattivo (stato attuale: %d).\n", nome, stato_attuale);
-        return;
-    }
-
-    // Aggiorna lo stato del dispositivo e il timestamp di attivazione
-    if (nuovo_stato == 2) {
-        snprintf(query, sizeof(query), 
-                 "UPDATE dispositivi SET stato = %d, timestamp_attivazione = NOW() + INTERVAL %d HOUR WHERE nome = '%s'", 
-                 nuovo_stato, ore, nome);
-
-        // Invia la richiesta CoAP
-        invia_richiesta_coap(nome);
-    } else {
-        snprintf(query, sizeof(query), 
-                 "UPDATE dispositivi SET stato = %d, timestamp_attivazione = NULL WHERE nome = '%s'", 
-                 nuovo_stato, nome);
-    }
-
-    if (mysql_query(conn, query)) {
-        printf("Errore nell'aggiornamento dello stato: %s\n", mysql_error(conn));
-    } else {
-        printf("Stato del dispositivo '%s' aggiornato con successo.\n", nome);
-    }
+    printf("Richiesta inviata al server per aggiornare lo stato del dispositivo '%s'.\n", nome);
 }
 
 void mostra_dati(MYSQL *conn) {
@@ -134,30 +119,6 @@ void mostra_dati(MYSQL *conn) {
     }
 
     mysql_free_result(res);
-}
-
-void invia_richiesta_coap(const char *nome_dispositivo) {
-    static coap_endpoint_t server_ep;
-    static coap_message_t request[1]; // CoAP request
-    char payload[256];
-    char *ip_address = "fd00::1"; // Indirizzo IPv6 del server CoAP
-    char *port = "5683"; // Porta del server CoAP
-    
-    snprintf(payload, sizeof(payload), "%s", nome_dispositivo);
-
-    // Configura l'endpoint del server CoAP
-    coap_endpoint_parse("coap://[fd00::1]:5683", strlen("coap://[fd00::1]:5683"), &server_ep);
-
-    // Inizializza il messaggio CoAP
-    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
-    coap_set_header_uri_path(request, "gestione");
-    coap_set_payload(request, (uint8_t *)payload, strlen(payload));
-
-    // Invia la richiesta CoAP
-    printf("Invio richiesta CoAP al server: %s\n", payload);
-    COAP_BLOCKING_REQUEST(&server_ep, request, NULL);
-
-    printf("Richiesta CoAP inviata con successo.\n");
 }
 
 void inserisci_dispositivo(MYSQL *conn) {
@@ -235,7 +196,6 @@ int main() {
         printf("4. Inserisci nuovo dispositivo\n");
         printf("5. Rimuovi dispositivo\n");
         printf("0. Esci\n");
-        printf("Scelta: ");
         scanf("%d", &scelta);
 
         switch (scelta) {

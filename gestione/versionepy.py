@@ -51,6 +51,28 @@ def mostra_dispositivi(connection):
     except Error as e:
         print(f"Errore nella query: {e}")
 
+# Funzione per inviare una richiesta CoAP al server
+def invia_richiesta_coap(nome_dispositivo, tempo_limite, consumo, produzione):
+    ip_address = "fd00::1"  # Modifica con l'indirizzo IP corretto del server
+    port = 5683
+    client = HelperClient(server=(ip_address, port))
+
+    try:
+        # Creazione del payload con tutte le informazioni richieste
+        payload = f'{{"nome": "{nome_dispositivo}", "tempo_limite": {tempo_limite}, "consumo": {consumo}, "produzione": {produzione}}}'
+        print(f"Inviando richiesta CoAP al server con payload: {payload}")
+
+        # Invio della richiesta POST al server
+        response = client.post("gestione", payload)
+        if response.code == 68:  # ACK
+            print(f"Richiesta CoAP inviata con successo: {payload}")
+        else:
+            print(f"Errore nell'invio della richiesta CoAP: {response.code}")
+    except Exception as e:
+        print(f"Errore nella richiesta CoAP: {e}")
+    finally:
+        client.stop()
+
 # Funzione per cambiare lo stato di un dispositivo
 def cambia_stato_dispositivo(connection, nome, nuovo_stato, ore):
     if not dispositivo_esiste(connection, nome):
@@ -59,9 +81,15 @@ def cambia_stato_dispositivo(connection, nome, nuovo_stato, ore):
 
     try:
         cursor = connection.cursor()
-        query = "SELECT stato FROM dispositivi WHERE nome = %s"
+        query = "SELECT stato, consumo_kwh, produzione_kwh FROM dispositivi WHERE nome = %s"
         cursor.execute(query, (nome,))
-        stato_attuale = cursor.fetchone()[0]
+        result = cursor.fetchone()
+
+        if result is None:
+            print(f"Errore: Il dispositivo '{nome}' non esiste nel database.")
+            return
+
+        stato_attuale, consumo, produzione = result
 
         if stato_attuale != 0:
             print(f"Errore: Il dispositivo '{nome}' non è inattivo (stato attuale: {stato_attuale}).")
@@ -74,7 +102,10 @@ def cambia_stato_dispositivo(connection, nome, nuovo_stato, ore):
             WHERE nome = %s
             """
             cursor.execute(query, (nuovo_stato, ore, nome))
-            invia_richiesta_coap(nome)
+            connection.commit()
+
+            # Invio della richiesta CoAP al server
+            invia_richiesta_coap(nome, ore, consumo, produzione)
         else:
             query = """
             UPDATE dispositivi
@@ -82,29 +113,11 @@ def cambia_stato_dispositivo(connection, nome, nuovo_stato, ore):
             WHERE nome = %s
             """
             cursor.execute(query, (nuovo_stato, nome))
+            connection.commit()
 
-        connection.commit()
         print(f"Stato del dispositivo '{nome}' aggiornato con successo.")
     except Error as e:
         print(f"Errore nell'aggiornamento dello stato: {e}")
-
-# Funzione per inviare una richiesta CoAP
-def invia_richiesta_coap(nome_dispositivo):
-    ip_address = "fd00::1"  # Modifica con l'indirizzo IP corretto
-    port = 5683
-    client = HelperClient(server=(ip_address, port))
-
-    try:
-        payload = f'{{"dispositivo": "{nome_dispositivo}", "stato": "pronto"}}'
-        response = client.post("gestione", payload)
-        if response.code == 68:  # ACK
-            print(f"Richiesta CoAP inviata con successo: {payload}")
-        else:
-            print(f"Errore nell'invio della richiesta CoAP: {response.code}")
-    except Exception as e:
-        print(f"Errore nella richiesta CoAP: {e}")
-    finally:
-        client.stop()
 
 # Funzione per inserire un nuovo dispositivo
 def inserisci_dispositivo(connection):
