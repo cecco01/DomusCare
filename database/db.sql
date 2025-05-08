@@ -25,25 +25,12 @@ DROP TABLE IF EXISTS data;
 CREATE TABLE data (
     id INT AUTO_INCREMENT PRIMARY KEY,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp dei dati
-    year INT NOT NULL,                             -- Anno
-    month INT NOT NULL,                            -- Mese
-    day INT NOT NULL,                              -- Giorno
-    hour INT NOT NULL,                             -- Ora
-    voltage FLOAT NOT NULL,                        -- Tensione (V)
-    current FLOAT NOT NULL,                        -- Corrente (A)
+    date DATE DEFAULT CURRENT_DATE, 
+    solarpower FLOAT NOT NULL,                     -- Potenza pannelli (kW)
     power FLOAT NOT NULL,                          -- Potenza consumata (kW)
     price FLOAT NOT NULL                           -- Prezzo dell'energia (USD/kWh)
 );
 
--- Drop the failures table if it exists
-DROP TABLE IF EXISTS failures;
-
--- Create the failures table
-CREATE TABLE failures (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    component VARCHAR(45),
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
 
 -- Drop the dispositivi table if it exists
 DROP TABLE IF EXISTS dispositivi;
