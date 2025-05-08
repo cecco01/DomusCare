@@ -95,6 +95,7 @@ void cambia_stato_dispositivo(MYSQL *conn, const char *nome, int nuovo_stato, in
     // Invia la richiesta CoAP al server
     invia_richiesta_coap(nome, nuovo_stato, ore);
 
+    
     printf("Richiesta inviata al server per aggiornare lo stato del dispositivo '%s'.\n", nome);
 }
 

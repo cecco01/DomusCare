@@ -33,6 +33,7 @@ CREATE TABLE data (
     current FLOAT NOT NULL,                        -- Corrente (A)
     power FLOAT NOT NULL,                          -- Potenza consumata (kW)
     price FLOAT NOT NULL                           -- Prezzo dell'energia (USD/kWh)
+    
 );
 
 -- Drop the failures table if it exists

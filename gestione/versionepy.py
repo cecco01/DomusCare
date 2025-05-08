@@ -168,7 +168,7 @@ def main():
         print("3. Inserisci nuovo dispositivo")
         print("4. Rimuovi dispositivo")
         print("0. Esci")
-        scelta = input("Scelta: ")
+        scelta = input()
 
         if scelta == "1":
             mostra_dispositivi(connection)
