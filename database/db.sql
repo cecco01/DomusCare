@@ -29,6 +29,7 @@ CREATE TABLE data (
     solarpower FLOAT NOT NULL,                     -- Potenza pannelli (kW)
     power FLOAT NOT NULL,                          -- Potenza consumata (kW)
     price FLOAT NOT NULL                           -- Prezzo dell'energia (USD/kWh)
+    
 );
 
 
