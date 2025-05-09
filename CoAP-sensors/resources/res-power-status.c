@@ -13,11 +13,11 @@
 
 static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 static void res_put_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
-
+//definisco una risorsa CoAP, GET per leggere lo stato, PUT per modificarlo(accendi/spegni)
 RESOURCE(res_power_status,"title=\"Coap Power Status\";rt=\"Power_status\"",res_get_handler,NULL,res_put_handler,NULL);
 
-static void
-res_put_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
+//handler per la modifica dello stato (PUT)
+static void res_put_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
     size_t len = 0;
     const char *value = NULL;
     int success = 1;
@@ -47,8 +47,8 @@ res_put_handler(coap_message_t *request, coap_message_t *response, uint8_t *buff
     }
 }
 
-static void
-res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
+//handler per la lettura dello stato (GET): quando un client CoAP esegue GET, restituisce lo stato attuale sotto forma di JSON
+static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
     coap_set_header_content_format(response, APPLICATION_JSON);
     int payload_len = snprintf((char *)buffer, preferred_size, "{\"sensor\":\"power\", \"status\":%d}", status);
     coap_set_payload(response, buffer, payload_len);
