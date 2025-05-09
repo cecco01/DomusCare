@@ -1,0 +1,3 @@
+tipo 0 lo sto usando per il server che inva il time stamp il giorno e il mese 
+tipo 1 lo usa il sensore per inviare all attuatore la potenza
+tipo 3 contiene lo status in cui viene impostato un dipositivo

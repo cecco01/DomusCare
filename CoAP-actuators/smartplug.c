@@ -4,28 +4,92 @@
 #include "contiki.h"
 #include "coap-engine.h"
 #include "sys/etimer.h"
+#include "coap-blocking-api.h"
 #include "ML/smart_grid_model_consumption.h"
 #include "ML/smart_grid_model_solar.h"
 
-#define PRICE_FACTOR 0.33  // Fattore per calcolare il prezzo di vendita (1/3 del prezzo di acquisto)
 #define MAX_FEATURES 6     // Numero massimo di feature per i modelli (incluso il timestamp)
 #define INTERVALLO_PREDIZIONE 900  // Intervallo di predizione in secondi (15 minuti)
+#define SERVER_SOLAR_EP "coap://[fd00::1]:5683/solarpower"
+#define SERVER_VOLTAGE_EP "coap://[fd00::1]:5683/voltage"
 
 static struct etimer efficient_timer;  // Timer per avviare il dispositivo nel momento più efficiente
+static struct etimer clock_timer;  // Timer per aggiornare l'orologio ogni minuto
+static struct etimer task_timer;  // Timer per disattivare il dispositivo dopo la durata del task
 static int tempo_limite = 0;  // Tempo in ore entro il quale il task deve essere completato
 static float consumo_corrente = 0.0;  // Consumo energetico corrente
 static float produzione_corrente = 0.0;  // Produzione energetica corrente
-static int timestamp = 0;  // Timestamp ricevuto dal server
+static int ore=0;  // Ore per il task
+static int minuti=0;  // Minuti per il task
+static int orologio_attivo = 0;    // Flag per indicare se l'orologio è attivo
+static int mese =0;  // Mese corrente
+static int giorno =0;  // Giorno corrente
+static int durata_task = 60*60;  // Durata del task in secondi
+// Risorsa CoAP per lo stato del dispositivo
+static int stato_dispositivo = 0;  // Stato del dispositivo: 0=Spento, 1=Attivo, 2=Pronto
+
+static void stato_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer,
+                          uint16_t preferred_size, int32_t *offset) {
+    const uint8_t *payload = NULL;
+    size_t len = coap_get_payload(request, &payload);
+
+    if (len > 0) {
+        int nuovo_stato;
+        sscanf((const char *)payload, "%d", &nuovo_stato);
+
+        if (nuovo_stato >= 0 && nuovo_stato <= 2) {
+            stato_dispositivo = nuovo_stato;
+            printf("Stato dispositivo aggiornato a: %d\n", stato_dispositivo);
+
+            if (stato_dispositivo == 2) {
+                printf("Dispositivo in modalità Pronto. Avvio gestione per l'efficienza energetica.\n");
+                etimer_set(&efficient_timer, CLOCK_SECOND);  // Avvia la gestione
+            } else if (stato_dispositivo == 1 || stato_dispositivo == 0) {
+                printf("Dispositivo in modalità %s. Interruzione della gestione.\n",
+                       stato_dispositivo == 1 ? "Attivo" : "Spento");
+                etimer_stop(&efficient_timer);  // Ferma la gestione
+            }
+
+            snprintf((char *)buffer, preferred_size, "Stato aggiornato a %d", stato_dispositivo);
+            coap_set_payload(response, buffer, strlen((char *)buffer));
+            coap_set_status_code(response, CHANGED_2_04);
+        } else {
+            snprintf((char *)buffer, preferred_size, "Stato non valido");
+            coap_set_payload(response, buffer, strlen((char *)buffer));
+            coap_set_status_code(response, BAD_REQUEST_4_00);
+        }
+    } else {
+        snprintf((char *)buffer, preferred_size, "Stato corrente: %d", stato_dispositivo);
+        coap_set_payload(response, buffer, strlen((char *)buffer));
+        coap_set_status_code(response, CONTENT_2_05);
+    }
+}
+
+// Funzione per richiedere nuovi dati al sensore CoAP
+void richiedi_dati_sensore(const char *server_ep, float *dato_ricevuto) {
+    static coap_endpoint_t server_endpoint;
+    static coap_message_t request[1];
+
+    coap_endpoint_parse(server_ep, strlen(server_ep), &server_endpoint);
+    coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
+    coap_set_header_uri_path(request, server_ep);
+
+    printf("Richiesta dati al sensore: %s\n", server_ep);
+
+    COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
+
+    // Simula la ricezione del dato (sostituisci con il valore reale ricevuto)
+    *dato_ricevuto = 5.0;  // Valore simulato
+}
 
 // Funzione per calcolare il momento migliore per avviare il dispositivo
 void calcola_momento_migliore(float *features, int n_features, float prezzo_acquisto) {
-    float miglior_costo = -1.0;
     int miglior_tempo = -1;
 
     printf("Inizio calcolo del momento migliore per avviare il dispositivo...\n");
 
-    // Itera su tutti i possibili intervalli entro il tempo limite
-    for (int i = 0; i <= tempo_limite * 4; i++) {  // Ogni iterazione rappresenta 15 minuti
+    // Itera su tutti i possibili intervalli entro la prossima ora (4 intervalli da 15 minuti)
+    for (int i = 0; i < 4; i++) {  // Ogni iterazione rappresenta 15 minuti
         int tempo_attuale = timestamp + (i * INTERVALLO_PREDIZIONE);  // Calcola il timestamp futuro
         features[0] = tempo_attuale;  // Aggiorna il timestamp nelle feature
 
@@ -33,34 +97,116 @@ void calcola_momento_migliore(float *features, int n_features, float prezzo_acqu
         float consumo_predetto = smart_grid_model_consumption_regress1(features, n_features);
         float produzione_solare_predetta = smart_grid_model_solar_regress1(features, n_features);
 
-        // Calcola il costo netto
-        float costo = (consumo_predetto - produzione_solare_predetta) * prezzo_acquisto;
-        if (costo < 0) costo = 0;  // Evita costi negativi
-
-        printf("Predizione per il tempo %d: Consumo %.2f kW, Produzione %.2f kW, Costo %.2f USD\n",
-               tempo_attuale, consumo_predetto, produzione_solare_predetta, costo);
-
-        // Aggiorna il momento migliore se il costo è inferiore
-        if (miglior_costo == -1.0 || costo < miglior_costo) {
-            miglior_costo = costo;
+        // Controlla se c'è surplus energetico
+        if (produzione_solare_predetta > consumo_predetto) {
             miglior_tempo = i * INTERVALLO_PREDIZIONE;
+            printf("Surplus energetico previsto tra %d secondi: Consumo %.2f kW, Produzione %.2f kW\n",
+                   miglior_tempo, consumo_predetto, produzione_solare_predetta);
+            break;  // Trova il primo intervallo con surplus e termina
+        } else {
+            printf("Nessun surplus energetico previsto per il tempo %d: Consumo %.2f kW, Produzione %.2f kW\n",
+                   tempo_attuale, consumo_predetto, produzione_solare_predetta);
         }
     }
 
     if (miglior_tempo >= 0) {
-        printf("Momento migliore trovato tra %d secondi con costo %.2f USD. Avvio timer.\n",
-               miglior_tempo, miglior_costo);
+        printf("Momento migliore trovato tra %d secondi. Avvio timer.\n", miglior_tempo);
         etimer_set(&efficient_timer, miglior_tempo * CLOCK_SECOND);
     } else {
-        printf("Non è stato possibile trovare un momento efficiente entro il tempo limite.\n");
+        printf("Non è stato possibile trovare un momento con surplus energetico entro la prossima ora.\n");
+        printf("Richiedo nuovi dati dai sensori e riprovo tra 15 minuti.\n");
+
+        // Richiedi nuovi dati dai sensori
+        richiedi_dati_sensore(SERVER_SOLAR_EP, &produzione_corrente);
+        richiedi_dati_sensore(SERVER_VOLTAGE_EP, &consumo_corrente);
+
+        // Riprova tra 15 minuti
+        etimer_set(&efficient_timer, INTERVALLO_PREDIZIONE * CLOCK_SECOND);
     }
-    miglior_costo = -1.0;  // Reset del miglior costo
+}
+
+// Funzione per disattivare il dispositivo
+void disattiva_dispositivo() {
+    // Imposta lo stato del dispositivo a 0 (Spento)
+    stato_dispositivo = 0;
+    printf("Dispositivo disattivato. Stato impostato a: %d (Spento)\n", stato_dispositivo);
+
+    // Invia un segnale al server per notificare la disattivazione
+    static coap_endpoint_t server_endpoint;
+    static coap_message_t request[1];
+
+    const char *server_url = "coap://[fd00::1]:5683/device_status";  // URL del server
+    coap_endpoint_parse(server_url, strlen(server_url), &server_endpoint);
+    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
+    coap_set_header_uri_path(request, "device_status");
+
+    // Payload per notificare la disattivazione
+    const char *payload = "{\"tipo\": \"3\", \"status\": \"inactive\"}";
+    coap_set_payload(request, (uint8_t *)payload, strlen(payload));
+
+    printf("Invio segnale al server: %s\n", payload);
+
+    // Invia la richiesta al server
+    COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
+
+    printf("Segnale di disattivazione inviato al server con successo.\n");
 }
 
 // Funzione per avviare il dispositivo
 void avvia_dispositivo() {
-    printf("Dispositivo avviato con successo!\n");
-    // Aggiungi qui la logica per avviare il dispositivo (es. invio comando CoAP)
+    // Imposta lo stato del dispositivo a 1 (Attivo)
+    stato_dispositivo = 1;
+    printf("Dispositivo avviato. Stato impostato a: %d (Attivo)\n", stato_dispositivo);
+
+    // Invia un segnale al server per notificare l'avvio
+    static coap_endpoint_t server_endpoint;
+    static coap_message_t request[1];
+
+    const char *server_url = "coap://[fd00::1]:5683/device_status";  // URL del server
+    coap_endpoint_parse(server_url, strlen(server_url), &server_endpoint);
+    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
+    coap_set_header_uri_path(request, "device_status");
+
+    // Payload per notificare l'avvio
+    const char *payload = "{\"status\": \"active\"}";
+    coap_set_payload(request, (uint8_t *)payload, strlen(payload));
+
+    printf("Invio segnale al server: %s\n", payload);
+
+    // Invia la richiesta al server
+    COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
+
+    printf("Segnale inviato al server con successo.\n");
+
+    // Imposta il timer per disattivare il dispositivo dopo la durata del task
+    etimer_set(&task_timer, durata_task * CLOCK_SECOND);
+    printf("Timer impostato per disattivare il dispositivo dopo %d secondi.\n", durata_task);
+}
+
+// Funzione per aggiornare l'orologio
+void aggiorna_orologio() {
+    if (orologio_attivo) {
+        minuti += 1;  // Incrementa i minuti di 1
+        if (minuti >= 60) {
+            minuti = 0;
+            ore = (ore + 1) % 24;  // Incrementa le ore e gestisce il formato 24 ore
+            if (ore == 0) {  // Incrementa il giorno a mezzanotte
+                giorno += 1;
+                if ((mese == 1 || mese == 3 || mese == 5 || mese == 7 || mese == 8 || mese == 10 || mese == 12) && giorno > 31) {
+                    giorno = 1;
+                    mese = (mese % 12) + 1;
+                } else if ((mese == 4 || mese == 6 || mese == 9 || mese == 11) && giorno > 30) {
+                    giorno = 1;
+                    mese = (mese % 12) + 1;
+                } else if (mese == 2 && giorno > 28) {  // Non gestiamo anni bisestili
+                    giorno = 1;
+                    mese = 3;
+                }
+            }
+        }
+        printf("Orologio aggiornato: %02d:%02d, Giorno: %02d, Mese: %02d\n", ore, minuti, giorno, mese);
+        etimer_reset(&clock_timer);  // Reset del timer per il prossimo aggiornamento
+    }
 }
 
 // Callback per gestire i messaggi CoAP ricevuti
@@ -73,27 +219,36 @@ void coap_message_handler(coap_message_t *request, coap_message_t *response, uin
         snprintf(payload_str, sizeof(payload_str), "%.*s", (int)len, (char *)payload);
         printf("Messaggio CoAP ricevuto: %s\n", payload_str);
 
-        // Parsing del payload per ottenere il tempo limite, il consumo, la produzione e il timestamp
-        sscanf(payload_str, "{\"tempo_limite\": %d, \"consumo\": %f, \"produzione\": %f, \"timestamp\": %d}", 
-               &tempo_limite, &consumo_corrente, &produzione_corrente, &timestamp);
-        printf("Tempo limite ricevuto: %d ore\n", tempo_limite);
-        printf("Consumo corrente: %.2f kW\n", consumo_corrente);
-        printf("Produzione corrente: %.2f kW\n", produzione_corrente);
-        printf("Timestamp ricevuto: %d\n", timestamp);
+        // Parsing iniziale per il tipo di messaggio
+        int tipo_messaggio = -1;
+        sscanf(payload_str, "{\"tipo\": %d", &tipo_messaggio);
 
-        // Simula le feature di input (sostituisci con dati reali)
-        float features[MAX_FEATURES] = {timestamp, 12, 230.0, consumo_corrente, produzione_corrente};  // Timestamp, ora, tensione, corrente, produzione
-        float prezzo_acquisto = 0.15;  // Prezzo di acquisto dell'energia
+        if (tipo_messaggio == 0) {
+            // Parsing per ora, minuti, giorno e mese
+            sscanf(payload_str, "{\"tipo\": %d, \"ora\": %d, \"minuti\": %d, \"giorno\": %d, \"mese\": %d}",
+                   &tipo_messaggio, &ore, &minuti, &giorno, &mese);
+            printf("Tipo: %d, Ora ricevuta: %02d, Minuti ricevuti: %02d, Giorno: %02d, Mese: %02d\n",
+                   tipo_messaggio, ore, minuti, giorno, mese);
 
-        // Calcola il momento migliore
-        calcola_momento_migliore(features, MAX_FEATURES, prezzo_acquisto);
+            // Avvia l'orologio se non è già attivo
+            if (!orologio_attivo) {
+                orologio_attivo = 1;
+                etimer_set(&clock_timer, CLOCK_SECOND * 60);  // Imposta il timer per aggiornare ogni minuto
+                printf("Orologio avviato.\n");
+            }
+
+            // Risposta al server
+            coap_set_status_code(response, CHANGED_2_04);
+            snprintf((char *)buffer, preferred_size, "Ora, minuti, giorno e mese ricevuti e orologio avviato: %02d:%02d, Giorno: %02d, Mese: %02d",
+                     ore, minuti, giorno, mese);
+            coap_set_payload(response, buffer, strlen((char *)buffer));
+        } else {
+            printf("Tipo di messaggio non supportato o non valido: %d\n", tipo_messaggio);
+            coap_set_status_code(response, BAD_REQUEST_4_00);
+            snprintf((char *)buffer, preferred_size, "Tipo di messaggio non valido");
+            coap_set_payload(response, buffer, strlen((char *)buffer));
+        }
     }
-
-    // Risposta al server
-    coap_set_status_code(response, CHANGED_2_04);
-    snprintf((char *)buffer, preferred_size, "Tempo limite impostato a %d ore, consumo %.2f kW, produzione %.2f kW, timestamp %d", 
-             tempo_limite, consumo_corrente, produzione_corrente, timestamp);
-    coap_set_payload(response, buffer, strlen((char *)buffer));
 }
 
 // Processo principale
@@ -110,12 +265,34 @@ PROCESS_THREAD(smartplug_process, ev, data) {
     coap_activate_resource(&coap_resource, "gestione");
     coap_resource.handler = coap_message_handler;
 
+    // Registra la risorsa CoAP per lo stato
+    static coap_resource_t stato_resource;
+    coap_activate_resource(&stato_resource, "stato");
+    stato_resource.get_handler = stato_handler;
+    stato_resource.post_handler = stato_handler;
+
     while (1) {
         PROCESS_WAIT_EVENT();
 
         if (etimer_expired(&efficient_timer)) {
-            printf("Timer scaduto: Avvio del dispositivo nel momento più efficiente.\n");
-            avvia_dispositivo();
+            if (stato_dispositivo == 2) {
+                printf("Gestione per l'efficienza energetica in corso...\n");
+                // Aggiungi qui la logica per la gestione dell'efficienza energetica
+                etimer_reset(&efficient_timer);  // Continua la gestione
+            } else {
+                printf("Timer scaduto: Avvio del dispositivo nel momento più efficiente.\n");
+                avvia_dispositivo();
+            }
+        }
+
+        // Disattiva il dispositivo quando il task timer scade
+        if (etimer_expired(&task_timer)) {
+            disattiva_dispositivo();
+        }
+
+        // Aggiorna l'orologio ogni minuto
+        if (etimer_expired(&clock_timer)) {
+            aggiorna_orologio();
         }
     }
 
