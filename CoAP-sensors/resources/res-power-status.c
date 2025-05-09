@@ -4,7 +4,7 @@
 #include <time.h>
 #include "coap-engine.h"
 
-#include "voltage_status.h"
+#include "power_status.h"
 
 /* Log configuration */
 #include "sys/log.h"
@@ -14,7 +14,7 @@
 static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 static void res_put_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
-RESOURCE(res_voltage_status,"title=\"Coap Voltage Status\";rt=\"voltage_status\"",res_get_handler,NULL,res_put_handler,NULL);
+RESOURCE(res_power_status,"title=\"Coap Power Status\";rt=\"Power_status\"",res_get_handler,NULL,res_put_handler,NULL);
 
 static void
 res_put_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
@@ -39,18 +39,18 @@ res_put_handler(coap_message_t *request, coap_message_t *response, uint8_t *buff
 
     if (success){
         coap_set_status_code(response, CHANGED_2_04);
-        LOG_INFO("Voltage status changed to %d\n", status);
+        LOG_INFO("Power status changed to %d\n", status);
     }
     else{
         coap_set_status_code(response, BAD_REQUEST_4_00);
-        LOG_ERR("Voltage status change failed\n");
+        LOG_ERR("Power status change failed\n");
     }
 }
 
 static void
 res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
     coap_set_header_content_format(response, APPLICATION_JSON);
-    int payload_len = snprintf((char *)buffer, preferred_size, "{\"sensor\":\"voltage\", \"status\":%d}", status);
+    int payload_len = snprintf((char *)buffer, preferred_size, "{\"sensor\":\"power\", \"status\":%d}", status);
     coap_set_payload(response, buffer, payload_len);
 
     LOG_INFO("Payload: %s\n", buffer);

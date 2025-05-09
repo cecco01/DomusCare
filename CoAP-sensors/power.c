@@ -13,7 +13,7 @@
 #include "dev/button-sensor.h"
 #endif
 
-#include "nomefileh.h"//qua ci metterò il file .h  che aggiungerò in resources qualcosa tipo voltage.h 
+#include "power_status.h"//qua ci metterò il file .h  che aggiungerò in resources qualcosa tipo power.h 
 
 /* Log configuration */
 #include "sys/log.h"
@@ -46,17 +46,17 @@ void client_chunk_handler(coap_message_t *response){//
  * Resources to be activated need to be imported through the extern keyword.
  * The build system automatically compiles the resources in the corresponding sub-directory.
  */
- extern coap_resource_t res_voltage;
- extern coap_resource_t res_voltage_status;
+ extern coap_resource_t res_power;
+ extern coap_resource_t res_power_status;
  
  static struct etimer e_timer, sleep_timer;
  
- PROCESS(voltage_server, "Voltage Sensor CoAP Server");
- AUTOSTART_PROCESSES(&voltage_server);
+ PROCESS(power_server, "Power Sensor CoAP Server");
+ AUTOSTART_PROCESSES(&power_server);
  
  int status = 1;
  
- PROCESS_THREAD(voltage_server, ev, data){
+ PROCESS_THREAD(power_server, ev, data){
    static coap_endpoint_t main_server_ep;
    static coap_message_t request[1];
  
@@ -66,12 +66,12 @@ void client_chunk_handler(coap_message_t *response){//
  #if !PLATFORM_SUPPORTS_BUTTON_HAL
    SENSORS_ACTIVATE(button_sensor);
  #endif
-   printf("Press a button to switch the voltage status\n");
+   printf("Press a button to switch the power status\n");
  #endif
  
-   LOG_INFO("Starting Voltage Server\n");
-   coap_activate_resource(&res_voltage, "voltage");
-   coap_activate_resource(&res_voltage_status, "voltage/status");
+   LOG_INFO("Starting power Server\n");
+   coap_activate_resource(&res_power, "power");
+   coap_activate_resource(&res_power_status, "power/status");
  
    while (max_registration_retry != 0){
      /* -------------- REGISTRATION --------------*/
@@ -80,7 +80,7 @@ void client_chunk_handler(coap_message_t *response){//
      // Prepare the message
      coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
      coap_set_header_uri_path(request, "register/");
-     const char msg[] = "voltage";
+     const char msg[] = "power";
      // Set payload
      coap_set_payload(request, (uint8_t *)msg, sizeof(msg) - 1);
  
@@ -107,8 +107,8 @@ void client_chunk_handler(coap_message_t *response){//
  
      if (ev == PROCESS_EVENT_TIMER && data == &e_timer){
        if (status == 1){
-         res_voltage.trigger();
-         LOG_INFO("Voltage event triggered\n");
+         res_power.trigger();
+         LOG_INFO("Power event triggered\n");
        }
        etimer_reset(&e_timer);
  
@@ -121,12 +121,12 @@ void client_chunk_handler(coap_message_t *response){//
      else if (ev == sensors_event && data == &button_sensor){
  #endif
  
-       LOG_INFO("Button pressed: switch the voltage status from %d to %d\n", status, !status);
+       LOG_INFO("Button pressed: switch the power status from %d to %d\n", status, !status);
  
        status = !status;
  
        if (status == 1){
-         // set a timer to send the voltage value every 10 seconds
+         // set a timer to send the power value every 10 seconds
          etimer_set(&e_timer, CLOCK_SECOND * 10);
        }
  

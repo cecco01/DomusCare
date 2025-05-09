@@ -13,7 +13,7 @@
 #include "dev/button-sensor.h"
 #endif
 
-#include "nomefileh.h"//file .h  che aggiungerò in resources, probabilmente ampere.h
+#include "solar_status.h"//file .h  che aggiungerò in resources
 
 /* Log configuration */
 #include "sys/log.h"
@@ -46,17 +46,17 @@ void client_chunk_handler(coap_message_t *response){//
  * Resources to be activated need to be imported through the extern keyword.
  * The build system automatically compiles the resources in the corresponding sub-directory.
  */
- extern coap_resource_t res_ampere;
- extern coap_resource_t res_ampere_status;
+ extern coap_resource_t res_SolarPw;
+ extern coap_resource_t res_SolarPw_status;
  
  static struct etimer e_timer, sleep_timer;
  
- PROCESS(ampere_server, "Ampere Sensor CoAP Server");
- AUTOSTART_PROCESSES(&ampere_server);
+ PROCESS(SolarPw_server, "SolarPw Sensor CoAP Server");
+ AUTOSTART_PROCESSES(&SolarPw_server);
  
  int status = 1;
  
- PROCESS_THREAD(ampere_server, ev, data){
+ PROCESS_THREAD(SolarPw_server, ev, data){
    static coap_endpoint_t main_server_ep;
    static coap_message_t request[1];
  
@@ -66,12 +66,12 @@ void client_chunk_handler(coap_message_t *response){//
  #if !PLATFORM_SUPPORTS_BUTTON_HAL
    SENSORS_ACTIVATE(button_sensor);
  #endif
-   printf("Press a button to switch the Ampere status\n");
+   printf("Press a button to switch the SolarPw status\n");
  #endif
  
-   LOG_INFO("Starting Ampere Server\n");
-   coap_activate_resource(&res_ampere, "ampere");
-   coap_activate_resource(&res_ampere_status, "ampere/status");
+   LOG_INFO("Starting SolarPw Server\n");
+   coap_activate_resource(&res_SolarPw, "SolarPw");
+   coap_activate_resource(&res_SolarPw_status, "SolarPw/status");
  
    while (max_registration_retry != 0){
      /* -------------- REGISTRATION --------------*/
@@ -80,7 +80,7 @@ void client_chunk_handler(coap_message_t *response){//
      // Prepare the message
      coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
      coap_set_header_uri_path(request, "register/");
-     const char msg[] = "ampere";
+     const char msg[] = "SolarPw";
      // Set payload
      coap_set_payload(request, (uint8_t *)msg, sizeof(msg) - 1);
  
@@ -107,8 +107,8 @@ void client_chunk_handler(coap_message_t *response){//
  
      if (ev == PROCESS_EVENT_TIMER && data == &e_timer){
        if (status == 1){
-         res_ampere.trigger();
-         LOG_INFO("Ampere event triggered\n");
+         res_SolarPw.trigger();
+         LOG_INFO("SolarPw event triggered\n");
        }
        etimer_reset(&e_timer);
  
@@ -121,12 +121,12 @@ void client_chunk_handler(coap_message_t *response){//
      else if (ev == sensors_event && data == &button_sensor){
  #endif
  
-       LOG_INFO("Button pressed: switch the ampere status from %d to %d\n", status, !status);
+       LOG_INFO("Button pressed: switch the SolarPw status from %d to %d\n", status, !status);
  
        status = !status;
  
        if (status == 1){
-         // set a timer to send the ampere value every 10 seconds
+         // set a timer to send the SolarPw value every 10 seconds
          etimer_set(&e_timer, CLOCK_SECOND * 10);
        }
  

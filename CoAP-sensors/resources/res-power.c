@@ -17,19 +17,19 @@
 static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 static void res_event_handler(void);
 
-EVENT_RESOURCE(res_voltage,"title=\"Observable resource\";voltage",res_get_handler,NULL,NULL,NULL,res_event_handler);
+EVENT_RESOURCE(res_power,"title=\"Observable resource\";power",res_get_handler,NULL,NULL,NULL,res_event_handler);
 
-static double current_voltage = 0;
+static double current_power = 0;
 
 static void res_event_handler(void){
-  current_voltage = generate_gaussian(MEAN, STDDEV);
-  LOG_INFO("Payload to be sent: {\"sensor\":\"voltage\", \"value\":%.2f}\n", current_voltage);
-  coap_notify_observers(&res_voltage);
+  current_power = generate_gaussian(MEAN, STDDEV);
+  LOG_INFO("Payload to be sent: {\"sensor\":\"power\", \"value\":%.2f}\n", current_power);
+  coap_notify_observers(&res_power);
 }
 
 static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
   coap_set_header_content_format(response, APPLICATION_JSON);
-  int payload_len = snprintf((char *)buffer, preferred_size, "{\"sensor\":\"voltage\", \"value\":%.2f}", current_voltage);
+  int payload_len = snprintf((char *)buffer, preferred_size, "{\"sensor\":\"power\", \"value\":%.2f}", current_power);
   coap_set_payload(response, buffer, payload_len);
 
   LOG_INFO("Payload: %s\n", buffer);
