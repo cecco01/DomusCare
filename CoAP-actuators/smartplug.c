@@ -6,9 +6,9 @@
 #include "sys/etimer.h"
 #include "coap-blocking-api.h"
 #include "ML/smart_grid_model_consumption.h"
-#include "ML/smart_grid_model_solar.h"
+#include "ML/smart_grid_model_production.h"
 
-#define MAX_FEATURES 6     // Numero massimo di feature per i modelli (incluso il timestamp)
+#define MAX_FEATURES 5     // Numero massimo di feature per i modelli (senza il timestamp anno)
 #define INTERVALLO_PREDIZIONE 900  // Intervallo di predizione in secondi (15 minuti)
 #define SERVER_SOLAR_EP "coap://[fd00::1]:5683/solarpower"
 #define SERVER_VOLTAGE_EP "coap://[fd00::1]:5683/voltage"
@@ -17,17 +17,19 @@ static struct etimer efficient_timer;  // Timer per avviare il dispositivo nel m
 static struct etimer clock_timer;  // Timer per aggiornare l'orologio ogni minuto
 static struct etimer task_timer;  // Timer per disattivare il dispositivo dopo la durata del task
 static int tempo_limite = 0;  // Tempo in ore entro il quale il task deve essere completato
-static float consumo_corrente = 0.0;  // Consumo energetico corrente
-static float produzione_corrente = 0.0;  // Produzione energetica corrente
-static int ore=0;  // Ore per il task
-static int minuti=0;  // Minuti per il task
+static float consumo = 0.0;  // Consumo energetico corrente
+static float produzione = 0.0;  // Produzione energetica corrente
+static int ore = 0;  // Ore per il task
+static int minuti = 0;  // Minuti per il task
 static int orologio_attivo = 0;    // Flag per indicare se l'orologio è attivo
-static int mese =0;  // Mese corrente
-static int giorno =0;  // Giorno corrente
-static int durata_task = 60*60;  // Durata del task in secondi
+static int mese = 0;  // Mese corrente
+static int giorno = 0;  // Giorno corrente
+static int durata_task = 60 * 60;  // Durata del task in secondi
+static float features_consumo[MAX_FEATURES];  // Array delle feature per il modello di consumo
+static float features_produzione[MAX_FEATURES];  // Array delle feature per il modello di produzione
 // Risorsa CoAP per lo stato del dispositivo
 static int stato_dispositivo = 0;  // Stato del dispositivo: 0=Spento, 1=Attivo, 2=Pronto
-
+static float consumo_dispositivo = 1.5;  // Consumo energetico corrente
 static void stato_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer,
                           uint16_t preferred_size, int32_t *offset) {
     const uint8_t *payload = NULL;
@@ -43,7 +45,10 @@ static void stato_handler(coap_message_t *request, coap_message_t *response, uin
 
             if (stato_dispositivo == 2) {
                 printf("Dispositivo in modalità Pronto. Avvio gestione per l'efficienza energetica.\n");
-                etimer_set(&efficient_timer, CLOCK_SECOND);  // Avvia la gestione
+                
+                
+                // Calcola il momento migliore per avviare il dispositivo
+                calcola_momento_migliore();
             } else if (stato_dispositivo == 1 || stato_dispositivo == 0) {
                 printf("Dispositivo in modalità %s. Interruzione della gestione.\n",
                        stato_dispositivo == 1 ? "Attivo" : "Spento");
@@ -65,6 +70,24 @@ static void stato_handler(coap_message_t *request, coap_message_t *response, uin
     }
 }
 
+// Funzione per richiedere i dati di consumo energetico
+void richiedi_consumo_energetico(const char *server_ep) {
+    static coap_endpoint_t server_endpoint;
+    static coap_message_t request[1];
+
+    coap_endpoint_parse(server_ep, strlen(server_ep), &server_endpoint);
+    coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
+    coap_set_header_uri_path(request, "power/consumo");
+
+    printf("Richiesta dati di consumo energetico al sensore: %s\n", server_ep);
+
+    COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
+
+
+    printf("Consumo energetico ricevuto: %.2f kW\n", consumo_corrente);
+}
+
+
 // Funzione per richiedere nuovi dati al sensore CoAP
 void richiedi_dati_sensore(const char *server_ep, float *dato_ricevuto) {
     static coap_endpoint_t server_endpoint;
@@ -83,42 +106,43 @@ void richiedi_dati_sensore(const char *server_ep, float *dato_ricevuto) {
 }
 
 // Funzione per calcolare il momento migliore per avviare il dispositivo
-void calcola_momento_migliore(float *features, int n_features, float prezzo_acquisto) {
+void calcola_momento_migliore() {
     int miglior_tempo = -1;
 
     printf("Inizio calcolo del momento migliore per avviare il dispositivo...\n");
 
     // Itera su tutti i possibili intervalli entro la prossima ora (4 intervalli da 15 minuti)
-    for (int i = 0; i < 4; i++) {  // Ogni iterazione rappresenta 15 minuti
-        int tempo_attuale = timestamp + (i * INTERVALLO_PREDIZIONE);  // Calcola il timestamp futuro
-        features[0] = tempo_attuale;  // Aggiorna il timestamp nelle feature
+    richiedi_dati_sensore(SERVER_SOLAR_EP, &produzione);
+    richiedi_dati_sensore(SERVER_VOLTAGE_EP, &consumo);
+    features_produzione[0] = mese;  // Mese
+    features_produzione[1] = giorno;  // Giorno
+    features_produzione[2] = ore;  // Ora
+    features_produzione[3] = produzione;  // Potenza solare (kW)
+    features_consumo[0] = mese;     // Mese
+    features_consumo[1] = giorno;   // Giorno
+    features_consumo[2] = ore;      // Ora
+    features_consumo[3] = consumo;    // Tensione (Volt)
+    float consumo_predetto = smart_grid_model_consumption_regress1(features_produzione, MAX_FEATURES);
+    float produzione_solare_predetta = smart_grid_model_solar_regress1(features_produzione, MAX_FEATURES);
 
-        // Predizioni
-        float consumo_predetto = smart_grid_model_consumption_regress1(features, n_features);
-        float produzione_solare_predetta = smart_grid_model_solar_regress1(features, n_features);
-
-        // Controlla se c'è surplus energetico
-        if (produzione_solare_predetta > consumo_predetto) {
-            miglior_tempo = i * INTERVALLO_PREDIZIONE;
-            printf("Surplus energetico previsto tra %d secondi: Consumo %.2f kW, Produzione %.2f kW\n",
-                   miglior_tempo, consumo_predetto, produzione_solare_predetta);
-            break;  // Trova il primo intervallo con surplus e termina
-        } else {
-            printf("Nessun surplus energetico previsto per il tempo %d: Consumo %.2f kW, Produzione %.2f kW\n",
-                   tempo_attuale, consumo_predetto, produzione_solare_predetta);
-        }
+    // Controlla se c'è surplus energetico
+    if (produzione_solare_predetta > consumo_predetto + consumo_dispositivo && produzione > consumo) {
+        miglior_tempo = i * INTERVALLO_PREDIZIONE;
+        printf("Surplus energetico previsto tra %d secondi: Consumo %.2f kW, Produzione %.2f kW\n",
+                miglior_tempo, consumo_predetto, produzione_solare_predetta);
+        break;  // Trova il primo intervallo con surplus e termina
+    } else {
+        printf("Nessun surplus energetico previsto per il tempo %d: Consumo %.2f kW, Produzione %.2f kW\n",
+                tempo_attuale, consumo_predetto, produzione_solare_predetta);
     }
+    
 
     if (miglior_tempo >= 0) {
         printf("Momento migliore trovato tra %d secondi. Avvio timer.\n", miglior_tempo);
-        etimer_set(&efficient_timer, miglior_tempo * CLOCK_SECOND);
+        avvia_dispositivo();
     } else {
         printf("Non è stato possibile trovare un momento con surplus energetico entro la prossima ora.\n");
         printf("Richiedo nuovi dati dai sensori e riprovo tra 15 minuti.\n");
-
-        // Richiedi nuovi dati dai sensori
-        richiedi_dati_sensore(SERVER_SOLAR_EP, &produzione_corrente);
-        richiedi_dati_sensore(SERVER_VOLTAGE_EP, &consumo_corrente);
 
         // Riprova tra 15 minuti
         etimer_set(&efficient_timer, INTERVALLO_PREDIZIONE * CLOCK_SECOND);
@@ -227,7 +251,7 @@ void coap_message_handler(coap_message_t *request, coap_message_t *response, uin
             // Parsing per ora, minuti, giorno e mese
             sscanf(payload_str, "{\"tipo\": %d, \"ora\": %d, \"minuti\": %d, \"giorno\": %d, \"mese\": %d}",
                    &tipo_messaggio, &ore, &minuti, &giorno, &mese);
-            printf("Tipo: %d, Ora ricevuta: %02d, Minuti ricevuti: %02d, Giorno: %02d, Mese: %02d\n",
+            printf("Tipo: %d, Ora: %02d, Minuti: %02d, Giorno: %02d, Mese: %02d\n",
                    tipo_messaggio, ore, minuti, giorno, mese);
 
             // Avvia l'orologio se non è già attivo
@@ -241,6 +265,24 @@ void coap_message_handler(coap_message_t *request, coap_message_t *response, uin
             coap_set_status_code(response, CHANGED_2_04);
             snprintf((char *)buffer, preferred_size, "Ora, minuti, giorno e mese ricevuti e orologio avviato: %02d:%02d, Giorno: %02d, Mese: %02d",
                      ore, minuti, giorno, mese);
+            coap_set_payload(response, buffer, strlen((char *)buffer));
+        } else if (tipo_messaggio == 2) {
+            // Parsing per i dati di produzione solare
+            sscanf(payload_str, "{\"tipo\": %d, \"solar_power\": %f}", &tipo_messaggio, &produzione_corrente);
+            printf("Tipo: %d, Produzione solare ricevuta: %.2f kW\n", tipo_messaggio, produzione_corrente);
+
+            // Risposta al server
+            coap_set_status_code(response, CHANGED_2_04);
+            snprintf((char *)buffer, preferred_size, "Produzione solare aggiornata: %.2f kW", produzione_corrente);
+            coap_set_payload(response, buffer, strlen((char *)buffer));
+        } else if (tipo_messaggio == 3) {
+            // Parsing per i dati di consumo energetico
+            sscanf(payload_str, "{\"tipo\": %d, \"consumo\": %f}", &tipo_messaggio, &consumo_corrente);
+            printf("Tipo: %d, Consumo energetico ricevuto: %.2f kW\n", tipo_messaggio, consumo_corrente);
+
+            // Risposta al server
+            coap_set_status_code(response, CHANGED_2_04);
+            snprintf((char *)buffer, preferred_size, "Consumo energetico aggiornato: %.2f kW", consumo_corrente);
             coap_set_payload(response, buffer, strlen((char *)buffer));
         } else {
             printf("Tipo di messaggio non supportato o non valido: %d\n", tipo_messaggio);
@@ -274,16 +316,6 @@ PROCESS_THREAD(smartplug_process, ev, data) {
     while (1) {
         PROCESS_WAIT_EVENT();
 
-        if (etimer_expired(&efficient_timer)) {
-            if (stato_dispositivo == 2) {
-                printf("Gestione per l'efficienza energetica in corso...\n");
-                // Aggiungi qui la logica per la gestione dell'efficienza energetica
-                etimer_reset(&efficient_timer);  // Continua la gestione
-            } else {
-                printf("Timer scaduto: Avvio del dispositivo nel momento più efficiente.\n");
-                avvia_dispositivo();
-            }
-        }
 
         // Disattiva il dispositivo quando il task timer scade
         if (etimer_expired(&task_timer)) {

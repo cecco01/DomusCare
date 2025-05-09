@@ -48,6 +48,7 @@ void client_chunk_handler(coap_message_t *response){//
  */
  extern coap_resource_t res_power;
  extern coap_resource_t res_power_status;
+ extern coap_resource_t res_consumo;
  
  static struct etimer e_timer, sleep_timer;
  
@@ -72,6 +73,7 @@ void client_chunk_handler(coap_message_t *response){//
    LOG_INFO("Starting power Server\n");
    coap_activate_resource(&res_power, "power");
    coap_activate_resource(&res_power_status, "power/status");
+   coap_activate_resource(&res_consumo, "power/consumo");
  
    while (max_registration_retry != 0){
      /* -------------- REGISTRATION --------------*/
@@ -136,3 +138,27 @@ void client_chunk_handler(coap_message_t *response){//
  
    PROCESS_END();
  }
+
+/* Risorsa per il consumo energetico */
+static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer,
+                            uint16_t preferred_size, int32_t *offset);
+
+RESOURCE(res_consumo,
+         "title=\"Consumo Energetico\";rt=\"Text\"",
+         res_get_handler,
+         NULL,
+         NULL,
+         NULL);
+
+static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer,
+                            uint16_t preferred_size, int32_t *offset) {
+    float consumo = 2.5;  // Simulazione del consumo energetico
+    char payload[64];
+    snprintf(payload, sizeof(payload), "{\"tipo\": 3, \"consumo\": %.2f}", consumo);
+
+    memcpy(buffer, payload, strlen(payload));
+    coap_set_payload(response, buffer, strlen(payload));
+    coap_set_status_code(response, CONTENT_2_05);
+
+    printf("Dati di consumo inviati: %s\n", payload);
+}
