@@ -52,7 +52,7 @@ static void res_put_handler(coap_message_t *request, coap_message_t *response, u
 //handler per la lettura dello stato (GET): quando un client CoAP esegue GET, restituisce lo stato attuale sotto forma di JSON
 static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
     coap_set_header_content_format(response, APPLICATION_JSON);
-    int payload_len = snprintf((char *)buffer, preferred_size, "{\"sensor\":\"SolarPower\", \"status\":%d}", status);
+    int payload_len = snprintf((char *)buffer, preferred_size, "{\"sensor\":\"SolarPower\", \"status\":%d}", status);//cambia campo tipo del JSON
     coap_set_payload(response, buffer, payload_len);
 
     LOG_INFO("Payload: %s\n", buffer);

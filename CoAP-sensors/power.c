@@ -154,7 +154,7 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
                             uint16_t preferred_size, int32_t *offset) {
     float consumo = 2.5;  // Simulazione del consumo energetico
     char payload[64];
-    snprintf(payload, sizeof(payload), "{\"tipo\": 3, \"consumo\": %.2f}", consumo);
+    snprintf(payload, sizeof(payload), "{\"tipo\": 1, \"consumo\": %.2f}", consumo);
 
     memcpy(buffer, payload, strlen(payload));
     coap_set_payload(response, buffer, strlen(payload));
