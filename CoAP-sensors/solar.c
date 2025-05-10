@@ -81,7 +81,7 @@ void client_chunk_handler(coap_message_t *response){//
      coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &main_server_ep);
      // Prepare the message
      coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
-     coap_set_header_uri_path(request, "register/");
+     coap_set_header_uri_path(request, "register/");//ricontrolla se register va bene...
      const char msg[] = "SolarPw";
      // Set payload
      coap_set_payload(request, (uint8_t *)msg, sizeof(msg) - 1);
