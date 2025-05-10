@@ -21,7 +21,6 @@ static float consumo = 0.0;  // Consumo energetico corrente
 static float produzione = 0.0;  // Produzione energetica corrente
 static int ore = 0;  // Ore per il task
 static int minuti = 0;  // Minuti per il task
-static int orologio_attivo = 0;    // Flag per indicare se l'orologio è attivo
 static int mese = 0;  // Mese corrente
 static int giorno = 0;  // Giorno corrente
 static int durata_task = 60 * 60;  // Durata del task in secondi
@@ -130,7 +129,7 @@ void calcola_momento_migliore() {
         miglior_tempo = i * INTERVALLO_PREDIZIONE;
         printf("Surplus energetico previsto tra %d secondi: Consumo %.2f kW, Produzione %.2f kW\n",
                 miglior_tempo, consumo_predetto, produzione_solare_predetta);
-        break;  // Trova il primo intervallo con surplus e termina
+        
     } else {
         printf("Nessun surplus energetico previsto per il tempo %d: Consumo %.2f kW, Produzione %.2f kW\n",
                 tempo_attuale, consumo_predetto, produzione_solare_predetta);
@@ -254,14 +253,9 @@ void coap_message_handler(coap_message_t *request, coap_message_t *response, uin
             printf("Tipo: %d, Ora: %02d, Minuti: %02d, Giorno: %02d, Mese: %02d\n",
                    tipo_messaggio, ore, minuti, giorno, mese);
 
-            // Avvia l'orologio se non è già attivo
-            if (!orologio_attivo) {
-                orologio_attivo = 1;
-                etimer_set(&clock_timer, CLOCK_SECOND * 60);  // Imposta il timer per aggiornare ogni minuto
-                printf("Orologio avviato.\n");
-            }
+            etimer_set(&clock_timer, CLOCK_SECOND * 60);  // Imposta il timer per aggiornare ogni minuto
+            printf("Orologio avviato.\n");
 
-            // Risposta al server
             coap_set_status_code(response, CHANGED_2_04);
             snprintf((char *)buffer, preferred_size, "Ora, minuti, giorno e mese ricevuti e orologio avviato: %02d:%02d, Giorno: %02d, Mese: %02d",
                      ore, minuti, giorno, mese);
