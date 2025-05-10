@@ -13,7 +13,7 @@
 #include "dev/button-sensor.h"
 #endif
 
-#include "solar_status.h"//file .h  che aggiungerò in resources
+#include "solar_status.h"
 
 /* Log configuration */
 #include "sys/log.h"

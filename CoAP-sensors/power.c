@@ -13,7 +13,7 @@
 #include "dev/button-sensor.h"
 #endif
 
-#include "power_status.h"//qua ci metterò il file .h  che aggiungerò in resources qualcosa tipo power.h 
+#include "power_status.h"
 
 /* Log configuration */
 #include "sys/log.h"
