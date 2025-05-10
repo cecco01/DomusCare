@@ -13,15 +13,12 @@
 #define SERVER_SOLAR_EP "coap://[fd00::1]:5683/solarpower"
 #define SERVER_VOLTAGE_EP "coap://[fd00::1]:5683/voltage"
 
-extern coap_resource_t res_gestione;
-extern coap_resource_t res_stato;
-
 static struct etimer efficient_timer;  // Timer per avviare il dispositivo nel momento più efficiente
 static struct etimer clock_timer;  // Timer per aggiornare l'orologio ogni minuto
 static struct etimer task_timer;  // Timer per disattivare il dispositivo dopo la durata del task
 static int tempo_limite = 0;  // Tempo in ore entro il quale il task deve essere completato
-static float consumo_corrente = 0.0;  // Consumo energetico corrente
-static float produzione_corrente = 0.0;  // Produzione energetica corrente
+static float consumo = 0.0;  // Consumo energetico corrente
+static float produzione = 0.0;  // Produzione energetica corrente
 static int ore = 0;  // Ore per il task
 static int minuti = 0;  // Minuti per il task
 static int mese = 0;  // Mese corrente
@@ -32,8 +29,6 @@ static float features_produzione[MAX_FEATURES];  // Array delle feature per il m
 // Risorsa CoAP per lo stato del dispositivo
 static int stato_dispositivo = 0;  // Stato del dispositivo: 0=Spento, 1=Attivo, 2=Pronto
 static float consumo_dispositivo = 1.5;  // Consumo energetico corrente
-
-//dare un'occhiata a questo handler, non so se va nbene sia per get che post!!!
 static void stato_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer,
                           uint16_t preferred_size, int32_t *offset) {
     const uint8_t *payload = NULL;
@@ -54,6 +49,9 @@ static void stato_handler(coap_message_t *request, coap_message_t *response, uin
                 // Calcola il momento migliore per avviare il dispositivo
                 calcola_momento_migliore();
             } else if (stato_dispositivo == 1 || stato_dispositivo == 0) {
+                if (stato_dispositivo == 1) {
+                    avvia_dispositivo();  // Avvia il dispositivo
+                } 
                 printf("Dispositivo in modalità %s. Interruzione della gestione.\n",
                        stato_dispositivo == 1 ? "Attivo" : "Spento");
                 etimer_stop(&efficient_timer);  // Ferma la gestione
@@ -111,11 +109,8 @@ void richiedi_dati_sensore(const char *server_ep, float *dato_ricevuto) {
 
 // Funzione per calcolare il momento migliore per avviare il dispositivo
 void calcola_momento_migliore() {
-    int miglior_tempo = -1;
-
     printf("Inizio calcolo del momento migliore per avviare il dispositivo...\n");
 
-    // Itera su tutti i possibili intervalli entro la prossima ora (4 intervalli da 15 minuti)
     richiedi_dati_sensore(SERVER_SOLAR_EP, &produzione);
     richiedi_dati_sensore(SERVER_VOLTAGE_EP, &consumo);
     features_produzione[0] = mese;  // Mese
@@ -130,21 +125,8 @@ void calcola_momento_migliore() {
     float produzione_solare_predetta = smart_grid_model_solar_regress1(features_produzione, MAX_FEATURES);
 
     // Controlla se c'è surplus energetico
-//LA VARIABILE i non è dichiarata, quindi non posso usarla!!!!
-//IDEM per il tempo_attuale, non è dichiarata!!!!
     if (produzione_solare_predetta > consumo_predetto + consumo_dispositivo && produzione > consumo) {
-        miglior_tempo = i * INTERVALLO_PREDIZIONE;
-        printf("Surplus energetico previsto tra %d secondi: Consumo %.2f kW, Produzione %.2f kW\n",
-                miglior_tempo, consumo_predetto, produzione_solare_predetta);
         
-    } else {
-        printf("Nessun surplus energetico previsto per il tempo %d: Consumo %.2f kW, Produzione %.2f kW\n",
-                tempo_attuale, consumo_predetto, produzione_solare_predetta);
-    }
-    
-
-    if (miglior_tempo >= 0) {
-        printf("Momento migliore trovato tra %d secondi. Avvio timer.\n", miglior_tempo);
         avvia_dispositivo();
     } else {
         printf("Non è stato possibile trovare un momento con surplus energetico entro la prossima ora.\n");
@@ -240,7 +222,6 @@ void aggiorna_orologio() {
 }
 
 // Callback per gestire i messaggi CoAP ricevuti
-//dare un'occhiata a questo handler, non so se va nbene sia per get che post!!!
 void coap_message_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
     const uint8_t *payload = NULL;
     size_t len = coap_get_payload(request, &payload);
@@ -305,19 +286,15 @@ PROCESS_THREAD(smartplug_process, ev, data) {
     printf("Avvio del dispositivo IoT Smart Plug...\n");
 
     // Registra la risorsa CoAP per ricevere messaggi
-    RESOURCE(res_gestione, "title=\"Gestione\"", coap_message_handler, NULL, coap_message_handler, NULL);
-    coap_activate_resource(&res_gestione, "gestione");
+    static coap_resource_t coap_resource;
+    coap_activate_resource(&coap_resource, "gestione");
+    coap_resource.handler = coap_message_handler;
 
     // Registra la risorsa CoAP per lo stato
-   RESOURCE(res_stato,
-         "title=\"Stato Smart Plug\";rt=\"status\"",
-         stato_handler,    // GET
-         NULL,             // POST (usiamo POST anche per impostare stato)
-         stato_handler,    // PUT
-         NULL);            // DELETE
-
-    coap_activate_resource(&res_stato, "stato");
-
+    static coap_resource_t stato_resource;
+    coap_activate_resource(&stato_resource, "stato");
+    stato_resource.get_handler = NULL;
+    stato_resource.post_handler = stato_handler;
 
     while (1) {
         PROCESS_WAIT_EVENT();
