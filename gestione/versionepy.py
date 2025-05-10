@@ -91,8 +91,8 @@ def cambia_stato_dispositivo(connection, nome, nuovo_stato, ore):
 
         stato_attuale, consumo, produzione = result
 
-        if stato_attuale != 0:
-            print(f"Errore: Il dispositivo '{nome}' non è inattivo (stato attuale: {stato_attuale}).")
+        if nome== "lavarice" and stato_attuale ==1:
+            print(f"Errore: Il dispositivo '{nome}' è attivo e non puo essere fermmato.")
             return
 
         if nuovo_stato == 2:
@@ -180,6 +180,10 @@ def main():
             else:
                 ore = 0
             cambia_stato_dispositivo(connection, nome, nuovo_stato, ore)
+            if nuovo_stato !=0 and nuovo_stato != 2 and nuovo_stato != 1:
+                print("Errore: Stato non valido. Deve essere 0, 1 o 2.")
+                continue
+            
         elif scelta == "3":
             inserisci_dispositivo(connection)
         elif scelta == "4":
