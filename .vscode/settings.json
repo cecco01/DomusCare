@@ -11,7 +11,7 @@
             "driver": "MySQL",
             "name": "SMART_HOME",
             "database": "iot",
-            "username": "Luca",
+            "username": "root",
             "askForPassword": true
         }
     ]

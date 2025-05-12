@@ -6,6 +6,7 @@ all: $(CONTIKI_PROJECT)
 # PLATFORMS_EXCLUDE = sky z1
 
 #Da terminare...
+
 CONTIKI = ../../contiki-ng
 
 include $(CONTIKI)/Makefile.include
