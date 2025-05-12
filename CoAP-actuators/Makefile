@@ -6,6 +6,7 @@ all: $(CONTIKI_PROJECT)
 # PLATFORMS_EXCLUDE = sky z1
 
 #Da terminare...
+
 CONTIKI = /home/iot_ubuntu_intel/contiki-ng
 MODULES += os/net/app-layer/coap
 MODULES += os/services/orchestra
@@ -17,3 +18,4 @@ MAKE_MAC = MAKE_MAC_TSCH
 CFLAGS += -Wno-error
 MAKE_ROUTING = MAKE_ROUTING_RPL_LITE
 include $(CONTIKI)/Makefile.include
+
