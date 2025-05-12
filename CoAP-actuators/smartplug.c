@@ -222,7 +222,7 @@ void coap_message_handler(coap_message_t *request, coap_message_t *response, uin
             coap_set_status_code(response, CHANGED_2_04);// imposta il codice di stato della risposta a 2.04 Changed. Questo codice indica che la richiesta è stata elaborata con successo e che la risorsa è stata modificata. In pratica, quando un client invia una richiesta di modifica (ad esempio un PUT o un POST), il server può rispondere con CHANGED_2_04 per confermare che l'operazione è stata eseguita correttamente. 
             snprintf((char *)buffer, preferred_size, "Produzione solare aggiornata: %.2f kW", produzione);
             coap_set_payload(response, buffer, strlen((char *)buffer));
-        } else if (tipo_messaggio == 3) {
+        } /*else if (tipo_messaggio == 3) {
             // Parsing per i dati di consumo energetico
             sscanf(payload_str, "{\"tipo\": %d, \"consumo\": %f}", &tipo_messaggio, &consumo);
             printf("Tipo: %d, Consumo energetico ricevuto: %.2f kW\n", tipo_messaggio, consumo);
@@ -231,7 +231,8 @@ void coap_message_handler(coap_message_t *request, coap_message_t *response, uin
             coap_set_status_code(response, CHANGED_2_04);
             snprintf((char *)buffer, preferred_size, "Consumo energetico aggiornato: %.2f kW", consumo);
             coap_set_payload(response, buffer, strlen((char *)buffer));
-        } else {
+        }*/ // LUCA NON DOVREBBE SERVIRE PERCHE C E NELLA GESTIONE DELLA RISORSA 
+        else {
             printf("Tipo di messaggio non supportato o non valido: %d\n", tipo_messaggio);
             coap_set_status_code(response, BAD_REQUEST_4_00);
             snprintf((char *)buffer, preferred_size, "Tipo di messaggio non valido");
