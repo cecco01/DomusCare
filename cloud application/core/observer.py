@@ -34,11 +34,11 @@ class ObserveSensor:
             
             if self.resource == "solarpower":
                 print("\n🔄🔄🔄🔄 SOLAR POWER 🔄🔄🔄🔄 : " + str(data["value"]))
-                Record.set_rotation(data["value"])
+                Record.set_solarpower(data["value"])
             
             elif self.resource == "power":
                 print("\n🔋🔋🔋🔋 POWER 🔋🔋🔋🔋 : " + str(data["value"]))
-                Record.set_voltage(data["value"])
+                Record.set_power(data["value"])
 
             else:
                 print("Unknown resource:", self.resource)

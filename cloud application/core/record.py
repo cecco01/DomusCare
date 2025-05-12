@@ -8,7 +8,6 @@ class Record:
 
     solar = 0
     power = 0
-    voltage = 0
     db = None
 
     @classmethod
@@ -45,7 +44,6 @@ class Record:
         """
         cls.solar = value
         cls.check_all_values()
-
     @staticmethod
     def check_all_values():
         """
