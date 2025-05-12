@@ -6,11 +6,6 @@ all: $(CONTIKI_PROJECT)
 # PLATFORMS_EXCLUDE = sky z1
 
 #Da terminare...
-<<<<<<< HEAD
-
-CONTIKI = ../../contiki-ng
-=======
->>>>>>> 58268f1a9188966308a49d1553a64805f2898dc0
 
 CONTIKI = /home/iot_ubuntu_intel/contiki-ng
 MODULES += os/net/app-layer/coap
@@ -21,6 +16,8 @@ MODULES_REL += /home/iot_ubuntu_intel/.local/lib/python3.10/site-packages/emlear
 MODULES_REL += ./resources
 MAKE_MAC = MAKE_MAC_TSCH
 CFLAGS += -Wno-error
+CFLAGS += -Wno-unused-variable
+CFLAGS += -Wno-unused-function
 MAKE_ROUTING = MAKE_ROUTING_RPL_LITE
 include $(CONTIKI)/Makefile.include
 

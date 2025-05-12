@@ -47,8 +47,8 @@ PROCESS(registra_dispositivo_process, "Registra Dispositivo Process");
 void calcola_momento_migliore();
 void richiedi_dati_sensore(const char *server_ep, float *dato_ricevuto);
 void avvia_dispositivo();
-float smart_grid_model_consumption_regress1(const float *features, int num_features);
-float smart_grid_model_solar_regress1(const float *features, int num_features);
+float model_consumption_regress1(const float *features, int num_features);
+float model_production_regress1(const float *features, int num_features);
 
 
 void client_chunk_handler(coap_message_t *response) {
@@ -123,8 +123,8 @@ void calcola_momento_migliore() {
     features_consumo[1] = giorno;   // Giorno
     features_consumo[2] = ore;      // Ora
     features_consumo[3] = consumo;    // Tensione (Volt)
-    float consumo_predetto = smart_grid_model_consumption_regress1(features_produzione, MAX_FEATURES);
-    float produzione_solare_predetta = smart_grid_model_solar_regress1(features_produzione, MAX_FEATURES);
+    float consumo_predetto = model_consumption_regress1(features_produzione, MAX_FEATURES);
+    float produzione_solare_predetta = model_production_regress1(features_produzione, MAX_FEATURES);
 
     // Controlla se c'è surplus energetico
     if (produzione_solare_predetta > consumo_predetto + consumo_dispositivo && produzione > consumo) {
@@ -258,7 +258,7 @@ PROCESS_THREAD(smartplug_process, ev, data) {
     // Registra la risorsa CoAP per ricevere messaggi
     static coap_resource_t coap_resource;
     coap_activate_resource(&coap_resource, "gestione");
-    coap_resource.get_handler = 1;
+    coap_resource.get_handler = NULL;
 
     // Registra la risorsa CoAP per lo stato
     static coap_resource_t stato_resource;
