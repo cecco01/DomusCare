@@ -1,4 +1,3 @@
-
 from typing import Any
 from core.database import Database
 
@@ -9,7 +8,6 @@ class Record:
 
     solar = 0
     power = 0
-    price = 0
     voltage = 0
     db = None
 
@@ -50,17 +48,21 @@ class Record:
 
     @staticmethod
     def check_all_values():
-        if (all([Record.solar, Record.power, Record.price, Record.voltage])):
+        """
+        Check if all values are set and insert the record into the database.
+
+        :return: None
+        """
+        if all([Record.solar, Record.power, Record.voltage]):
             Record.insert_record()
             Record.solar = 0
             Record.power = 0
-            Record.price = 0
             Record.voltage = 0
-        
+
     @staticmethod
     def insert_record():
         """
-        Insert the record into the database
+        Insert the record into the database.
 
         :return: None
         """
@@ -70,21 +72,18 @@ class Record:
 
         try:
             with connection.cursor() as cursor:
-                cursor = connection.cursor()
-                sql = "INSERT INTO data (solar, power, price, voltage) VALUES (%s, %s, %s, %s)"
-                cursor.execute(sql, (Record.solar, Record.power, Record.price, Record.voltage))
+                sql = "INSERT INTO data (solar, power, voltage) VALUES (%s, %s, %s)"
+                cursor.execute(sql, (Record.solar, Record.power, Record.voltage))
                 connection.commit()
                 print(f"Record inserted: {Record.__str__()}")
         except Exception as e:
             print(f"Error inserting record: {e}")
-            
 
     @staticmethod
     def __str__():
         """
-        Return the string representation of the record
+        Return the string representation of the record.
 
         :return: The string representation of the record
         """
-        return f"solar: {Record.solar}, power: {Record.power}, price: {Record.price}, Voltage: {Record.voltage}"
-    
+        return f"solar: {Record.solar}, power: {Record.power}, voltage: {Record.voltage}"
