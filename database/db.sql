@@ -25,7 +25,6 @@ DROP TABLE IF EXISTS data;
 CREATE TABLE data (
     id INT AUTO_INCREMENT PRIMARY KEY,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp dei dati
-    date DATE DEFAULT CURRENT_DATE, 
     solarpower FLOAT DEFAULT NULL,                     -- Potenza pannelli (kW)
     power FLOAT DEFAULT NULL                           -- Potenza consumata (kW)
     
@@ -55,6 +54,8 @@ INSERT INTO dispositivi (nome, tipo, stato, consumo_kwh, durata) VALUES
 SET GLOBAL event_scheduler = ON;
 
 -- Crea un evento per aggiornare lo stato dei dispositivi
+DELIMITER $$
+
 CREATE EVENT aggiorna_stato_dispositivi
 ON SCHEDULE EVERY 1 MINUTE
 DO
@@ -62,9 +63,10 @@ BEGIN
     UPDATE dispositivi
     SET stato = 0, timestamp_attivazione = NULL
     WHERE stato = 1 AND TIMESTAMPDIFF(MINUTE, timestamp_attivazione, NOW()) >= durata;
-    
-END;
-----  SERVE PER RENDERE PIU' LOGICA LA SIMULAZIONE DEI SENSOR
+END$$
+
+DELIMITER ;
+
 -- Creazione del trigger per aggiornare il consumo totale
 DELIMITER $$
 
@@ -81,7 +83,7 @@ BEGIN
     -- Aggiungi il consumo totale al valore di power nella nuova riga
     IF consumo_totale IS NOT NULL THEN
         UPDATE data
-        SET power = power + consumo_totale
+        SET power = NEW.power + consumo_totale
         WHERE id = NEW.id;
     END IF;
 END$$
