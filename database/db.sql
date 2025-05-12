@@ -14,7 +14,11 @@ DROP TABLE IF EXISTS sensor;
 CREATE TABLE sensor (
     ip_address VARCHAR(45) NOT NULL,
     type VARCHAR(45),
+<<<<<<< Updated upstream
     status INT
+=======
+    status BOOLEAN DEFAULT 1 -- 1=attivo, 0=inattivo
+>>>>>>> Stashed changes
 );
 
 -- Drop the data table if it exists
