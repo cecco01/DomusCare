@@ -399,7 +399,7 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
 
     // Crea il payload JSON per la registrazione
     char payload[256];
-    snprintf(payload, sizeof(payload), "{\"type\": \"actuator\", \"ip_address\": \"fd00::1\"}");
+    snprintf(payload, sizeof(payload), "{\"type\": \"actuator\"}");
 
     // Imposta il payload nella richiesta
     coap_set_payload(request, (uint8_t *)payload, strlen(payload));

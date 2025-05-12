@@ -39,7 +39,7 @@ class Registration(Resource):
             # Parsing del payload JSON
             payload = json.loads(request.payload)
             sensor_type = payload.get("type")
-            ip_address = payload.get("ip_address")
+            ip_address = request.source #payload.get("ip_address")
 
             if not sensor_type or not ip_address:
                 self.payload = "Errore: tipo o indirizzo IP mancante."

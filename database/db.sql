@@ -12,10 +12,9 @@ DROP TABLE IF EXISTS sensor;
 
 -- Create the sensor table
 CREATE TABLE sensor (
-    ip_address VARCHAR(45) PRIMARY KEY,
+    ip_address VARCHAR(45) NOT NULL,
     type VARCHAR(45),
-    status INT,
-    registration_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    status INT
 );
 
 -- Drop the data table if it exists
