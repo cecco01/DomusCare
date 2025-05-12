@@ -20,9 +20,14 @@
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_APP
 
+<<<<<<< HEAD
+#define SERVER_EP "coap://[fd00::1]:5683"
+//#define ACTUATOR_EP "coap://[fd00::1]:5683/gestione"  // Endpoint dell'attuatore
+=======
 #define SERVER_EP "coap://[fd00::1]:5683"  // Indirizzo del server
 #define ACTUATOR_EP "coap://[fd00::3]:5683/gestione"  // Indirizzo dell'attuatore
 #define SENSOR_SOLAR_IP "fd00::2"  // Indirizzo IP del sensore solare
+>>>>>>> 23a9eec3f6c11080e376995263277a64e3728b14
 
 #define MAX_REGISTRATION_RETRY 3
 
