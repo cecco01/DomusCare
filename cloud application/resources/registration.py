@@ -7,9 +7,9 @@ import time
 import threading
 import re
 from coapthon import defines
+from datetime import datetime
 
 class Control(Resource):
-
 
     def __init__(self, name="Control"):
         super(Control, self).__init__(name)
@@ -29,7 +29,39 @@ class Control(Resource):
         self.fetch_sensor_from_db(query)
 
         return self
-    
+
+    def render_POST(self, request):
+        """
+        Gestisce la registrazione di un sensore. Se il tipo è 'actuator',
+        invia un messaggio CoAP al dispositivo Smart Plug con data e ora.
+        """
+        try:
+            # Parsing del payload JSON
+            payload = json.loads(request.payload)
+            sensor_type = payload.get("type")
+            ip_address = payload.get("ip_address")
+
+            if not sensor_type or not ip_address:
+                self.payload = "Errore: tipo o indirizzo IP mancante."
+                return self
+
+            # Inserisce il sensore nel database
+            self.register_sensor(sensor_type, ip_address)
+
+            # Se il tipo è 'actuator', invia un messaggio CoAP al dispositivo Smart Plug
+            if sensor_type == "actuator":
+                self.send_activation_message(ip_address)
+
+            self.payload = f"Registrazione completata per il sensore di tipo {sensor_type}."
+            return self
+
+        except json.JSONDecodeError:
+            self.payload = "Errore: payload JSON non valido."
+            return self
+        except Error as e:
+            self.payload = f"Errore durante la registrazione del sensore: {e}"
+            return self
+
     def fetch_sensor_from_db(self, type):
         if not self.connection.is_connected():
             self.payload = None
@@ -63,31 +95,62 @@ class Control(Resource):
                     self.payload = json.dumps(response, separators=(',', ':'))
                     print(f"Payload: {self.payload}")
 
-
-
             else:
                 self.payload = None
                 print(f"No sensor found for type: {type}. Payload: {self.payload}")
-
-
-
-            # # if all sesnors are registered and status is 1, then send the payload
-            # if all([values["ip_address"] != "" and values["status"] == 1 for values in sensors.values()]):
-            #     ip_addresses = [
-            #         sensors["pressure"]["ip_address"].replace("fd00::", ""),
-            #         sensors["vibration"]["ip_address"].replace("fd00::", ""),
-            #         sensors["voltage"]["ip_address"].replace("fd00::", ""),
-            #         sensors["rotation"]["ip_address"].replace("fd00::", "")
-            #     ]
-            #     self.payload = ";".join(ip_addresses)
-            #     print(f"Payload: {self.payload}")
-
-            # else:
-            #     self.payload = None
-            #     print(f"Not all sensors are registered, Payload: {self.payload}")
         
         except Error as e:
             self.payload = None
             print(f"Error retrieving sensor data: {e}, Payload: {self.payload}")
-        
-        
+
+    def register_sensor(self, sensor_type, ip_address):
+        """
+        Registra un sensore nel database.
+
+        :param sensor_type: Tipo del sensore.
+        :param ip_address: Indirizzo IP del sensore.
+        """
+        if not self.connection.is_connected():
+            raise Error("Connessione al database persa.")
+
+        cursor = self.connection.cursor()
+        query = """
+        INSERT INTO sensor (type, ip_address, status)
+        VALUES (%s, %s, %s)
+        """
+        cursor.execute(query, (sensor_type, ip_address, 0))
+        self.connection.commit()
+        cursor.close()
+
+    def send_activation_message(self, ip_address):
+        """
+        Invia un messaggio CoAP al dispositivo Smart Plug per attivarlo con data e ora.
+
+        :param ip_address: Indirizzo IP del dispositivo Smart Plug.
+        """
+        port = 5683
+        client = HelperClient(server=(ip_address, port))
+
+        try:
+            # Ottieni la data e l'ora correnti
+            now = datetime.now()
+            payload = {
+                "tipo": 0,
+                "ora": now.hour,
+                "minuti": now.minute,
+                "giorno": now.day,
+                "mese": now.month
+            }
+
+            # Invia il messaggio CoAP
+            response = client.post("gestione", json.dumps(payload))
+            if response:
+                print(f"Messaggio inviato al dispositivo Smart Plug: {payload}")
+            else:
+                print("Errore durante l'invio del messaggio al dispositivo Smart Plug.")
+
+        except Exception as e:
+            print(f"Errore durante l'invio del messaggio CoAP: {e}")
+        finally:
+            client.stop()
+
