@@ -33,8 +33,7 @@ def cambia_stato_dispositivo(nome, nuovo_stato, ore=0):
         # Invia la richiesta al server CoAP
         payload = {
             "nome": nome,
-            "stato": nuovo_stato,
-            "tempo_limite": ore
+            "stato": nuovo_stato
         }
         response = client.post("control/", json.dumps(payload))
         if response and response.code == 68:  # ACK

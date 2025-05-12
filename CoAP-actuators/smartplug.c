@@ -179,7 +179,7 @@ void avvia_dispositivo() {
     coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
     coap_set_header_uri_path(request, "device_status");
 
-    // Payload per notificare l'avvio
+    // Payload per notificare l'avviocoap_activate_resource
     const char *payload = "{\"status\": \"active\"}";
     coap_set_payload(request, (uint8_t *)payload, strlen(payload));
 
@@ -193,6 +193,31 @@ void avvia_dispositivo() {
     // Imposta il timer per disattivare il dispositivo dopo la durata del task
     etimer_set(&task_timer, durata_task * CLOCK_SECOND);
     printf("Timer impostato per disattivare il dispositivo dopo %d secondi.\n", durata_task);
+}
+
+// Funzione per registrare il dispositivo con il server
+void registra_dispositivo(const char *server_url,  const char *tipo_dispositivo) {
+    static coap_endpoint_t server_endpoint;
+    static coap_message_t request[1];
+
+    // Configura l'endpoint del server
+    coap_endpoint_parse(server_url, strlen(server_url), &server_endpoint);
+    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
+    coap_set_header_uri_path(request, "register/");
+
+    // Crea il payload JSON per la registrazione
+    char payload[256];
+    snprintf(payload, sizeof(payload), "{\"type\": \"%s\", \"ip_address\": \"fd00::1\"}", tipo_dispositivo);
+
+    // Imposta il payload nella richiesta
+    coap_set_payload(request, (uint8_t *)payload, strlen(payload));
+
+    printf("Registrazione del dispositivo con il server: %s\n", payload);
+
+    // Invia la richiesta al server
+    COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
+
+    printf("Registrazione completata con successo.\n");
 }
 
 // Funzione per aggiornare l'orologio
@@ -285,6 +310,11 @@ PROCESS_THREAD(smartplug_process, ev, data) {
 
     printf("Avvio del dispositivo IoT Smart Plug...\n");
 
+    // Registra il dispositivo con il server
+    const char *server_url = "coap://[fd00::1]:5683";
+    const char *tipo_dispositivo = "actuator";
+    registra_dispositivo(server_url, tipo_dispositivo);
+
     // Registra la risorsa CoAP per ricevere messaggi
     static coap_resource_t coap_resource;
     coap_activate_resource(&coap_resource, "gestione");
@@ -298,7 +328,6 @@ PROCESS_THREAD(smartplug_process, ev, data) {
 
     while (1) {
         PROCESS_WAIT_EVENT();
-
 
         // Disattiva il dispositivo quando il task timer scade
         if (etimer_expired(&task_timer)) {
