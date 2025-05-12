@@ -10,8 +10,8 @@
 
 #define MAX_FEATURES 5     // Numero massimo di feature per i modelli (senza il timestamp anno)
 #define INTERVALLO_PREDIZIONE 900  // Intervallo di predizione in secondi (15 minuti)
-#define SERVER_SOLAR_EP "coap://[fd00::1]:5683/solarpower"
-#define SERVER_VOLTAGE_EP "coap://[fd00::1]:5683/voltage"
+#define SOLAR_EP "coap://[fd00::2]:5683"
+#define POWER_EP "coap://[fd00::4]:5683"
 
 static struct etimer efficient_timer;  // Timer per avviare il dispositivo nel momento più efficiente
 static struct etimer clock_timer;  // Timer per aggiornare l'orologio ogni minuto
@@ -72,22 +72,7 @@ static void stato_handler(coap_message_t *request, coap_message_t *response, uin
     }
 }
 
-// Funzione per richiedere i dati di consumo energetico
-void richiedi_consumo_energetico(const char *server_ep) {
-    static coap_endpoint_t server_endpoint;
-    static coap_message_t request[1];
 
-    coap_endpoint_parse(server_ep, strlen(server_ep), &server_endpoint);
-    coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
-    coap_set_header_uri_path(request, "power/consumo");
-
-    printf("Richiesta dati di consumo energetico al sensore: %s\n", server_ep);
-
-    COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
-
-
-    printf("Consumo energetico ricevuto: %.2f kW\n", consumo_corrente);
-}
 
 
 // Funzione per richiedere nuovi dati al sensore CoAP
@@ -102,17 +87,26 @@ void richiedi_dati_sensore(const char *server_ep, float *dato_ricevuto) {
     printf("Richiesta dati al sensore: %s\n", server_ep);
 
     COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
+    //inserisci il valore preso dal messaggio in dato_ricevuto
+    const uint8_t *payload = NULL;
+    size_t len = coap_get_payload(request, &payload);
+    if (len > 0) {
+        sscanf((const char *)payload, "%f", dato_ricevuto);
+        printf("Dati ricevuti dal sensore: %.2f\n", *dato_ricevuto);
+    } else {
+        printf("Errore nella ricezione dei dati dal sensore.\n");
+    }
+    
 
-    // Simula la ricezione del dato (sostituisci con il valore reale ricevuto)
-    *dato_ricevuto = 5.0;  // Valore simulato
+    
 }
 
 // Funzione per calcolare il momento migliore per avviare il dispositivo
 void calcola_momento_migliore() {
     printf("Inizio calcolo del momento migliore per avviare il dispositivo...\n");
 
-    richiedi_dati_sensore(SERVER_SOLAR_EP, &produzione);
-    richiedi_dati_sensore(SERVER_VOLTAGE_EP, &consumo);
+    richiedi_dati_sensore(SOLAR_EP, &produzione);
+    richiedi_dati_sensore(POWER_EP, &consumo);
     features_produzione[0] = mese;  // Mese
     features_produzione[1] = giorno;  // Giorno
     features_produzione[2] = ore;  // Ora
