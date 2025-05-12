@@ -19,7 +19,7 @@ static void res_get_handler(coap_message_t *request, coap_message_t *response, u
 static void res_event_handler(void);
 
 //macro che definisce una risorsa osservabile CoAP
-EVENT_RESOURCE(res_solarpower,"title=\"Observable resource\";SolarPower",res_get_handler,NULL,NULL,NULL,res_event_handler);
+EVENT_RESOURCE(res_SolarPw,"title=\"Observable resource\";SolarPower",res_get_handler,NULL,NULL,NULL,res_event_handler);
 
 static double current_solarpower = 0;//memorizza l'ultimo valore generato
 
@@ -27,7 +27,7 @@ static double current_solarpower = 0;//memorizza l'ultimo valore generato
 static void res_event_handler(void){
   current_solarpower = generate_gaussian(MEAN, STDDEV);
   LOG_INFO("Payload to be sent: {\"sensor\":\"SolarPower\", \"value\":%.2f}\n", current_solarpower);//cambia campo tipo del JSON
-  coap_notify_observers(&res_solarpower);
+  coap_notify_observers(&res_SolarPw);
 }
 
 //quando un client CoAP richiede la risorsa, viene generato un payload JSON con il valore corrente
