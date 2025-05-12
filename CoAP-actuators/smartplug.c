@@ -36,11 +36,21 @@ static int stato_dispositivo = 0;  // Stato del dispositivo: 0=Spento, 1=Attivo,
 static float consumo_dispositivo = 1.5;  // Consumo energetico corrente
 static int numero_ripetizioni = 0;  // Dichiarazione globale
 static int orologio_attivo = 0;  // Flag per indicare se l'orologio è attivo
+
+
+PROCESS(avvia_dispositivo_process, "Avvia Dispositivo Process");
+PROCESS(richiedi_dati_sensore_process, "Richiedi Dati Sensore Process");
+PROCESS(smartplug_process, "Smart Plug Process");
+PROCESS(disattiva_dispositivo_process, "Disattiva Dispositivo Process");
+PROCESS(registra_dispositivo_process, "Registra Dispositivo Process");
+
 void calcola_momento_migliore();
 void richiedi_dati_sensore(const char *server_ep, float *dato_ricevuto);
 void avvia_dispositivo();
 float smart_grid_model_consumption_regress1(const float *features, int num_features);
 float smart_grid_model_solar_regress1(const float *features, int num_features);
+
+
 void client_chunk_handler(coap_message_t *response) {
     const uint8_t *payload = NULL;
     size_t len = coap_get_payload(response, &payload);
@@ -50,6 +60,7 @@ void client_chunk_handler(coap_message_t *response) {
         printf("Nessun payload ricevuto nella risposta.\n");
     }
 }
+
 static void stato_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer,
                           uint16_t preferred_size, int32_t *offset) {
     const uint8_t *payload = NULL;
@@ -93,33 +104,9 @@ static void stato_handler(coap_message_t *request, coap_message_t *response, uin
     }
 }
 
-
-
-
 // Funzione per richiedere nuovi dati al sensore CoAP
 void richiedi_dati_sensore(const char *server_ep, float *dato_ricevuto) {
-    static coap_endpoint_t server_endpoint;
-    static coap_message_t request[1];
-
-    coap_endpoint_parse(server_ep, strlen(server_ep), &server_endpoint);
-    coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
-    coap_set_header_uri_path(request, server_ep);
-
-    printf("Richiesta dati al sensore: %s\n", server_ep);
-
-    COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
-    //inserisci il valore preso dal messaggio in dato_ricevuto
-    const uint8_t *payload = NULL;
-    size_t len = coap_get_payload(request, &payload);
-    if (len > 0) {
-        sscanf((const char *)payload, "%f", dato_ricevuto);
-        printf("Dati ricevuti dal sensore: %.2f\n", *dato_ricevuto);
-    } else {
-        printf("Errore nella ricezione dei dati dal sensore.\n");
-    }
-    
-
-    
+    process_start(&richiedi_dati_sensore_process, (void *)server_ep);
 }
 
 // Funzione per calcolare il momento migliore per avviare il dispositivo
@@ -159,85 +146,19 @@ void calcola_momento_migliore() {
 
 // Funzione per disattivare il dispositivo
 void disattiva_dispositivo() {
-    // Imposta lo stato del dispositivo a 0 (Spento)
-    stato_dispositivo = 0;
-    printf("Dispositivo disattivato. Stato impostato a: %d (Spento)\n", stato_dispositivo);
-
-    // Invia un segnale al server per notificare la disattivazione
-    static coap_endpoint_t server_endpoint;
-    static coap_message_t request[1];
-
-    const char *server_url = "coap://[fd00::1]:5683/device_status";  // URL del server
-    coap_endpoint_parse(server_url, strlen(server_url), &server_endpoint);
-    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
-    coap_set_header_uri_path(request, "device_status");
-
-    // Payload per notificare la disattivazione
-    const char *payload = "{\"tipo\": \"3\", \"status\": \"inactive\"}";
-    coap_set_payload(request, (uint8_t *)payload, strlen(payload));
-
-    printf("Invio segnale al server: %s\n", payload);
-
-    // Invia la richiesta al server
-    COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
-
-    printf("Segnale di disattivazione inviato al server con successo.\n");
+    process_start(&disattiva_dispositivo_process, NULL);
+    
 }
 
 // Funzione per avviare il dispositivo
 void avvia_dispositivo() {
-    // Imposta lo stato del dispositivo a 1 (Attivo)
-    stato_dispositivo = 1;
-    printf("Dispositivo avviato. Stato impostato a: %d (Attivo)\n", stato_dispositivo);
-
-    // Invia un segnale al server per notificare l'avvio
-    static coap_endpoint_t server_endpoint;
-    static coap_message_t request[1];
-
-    const char *server_url = "coap://[fd00::1]:5683/device_status";  // URL del server
-    coap_endpoint_parse(server_url, strlen(server_url), &server_endpoint);
-    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
-    coap_set_header_uri_path(request, "device_status");
-
-    // Payload per notificare l'avviocoap_activate_resource
-    const char *payload = "{\"status\": \"active\"}";
-    coap_set_payload(request, (uint8_t *)payload, strlen(payload));
-
-    printf("Invio segnale al server: %s\n", payload);
-
-    // Invia la richiesta al server
-    COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
-
-    printf("Segnale inviato al server con successo.\n");
-
-    // Imposta il timer per disattivare il dispositivo dopo la durata del task
-    etimer_set(&task_timer, durata_task * CLOCK_SECOND);
-    printf("Timer impostato per disattivare il dispositivo dopo %d secondi.\n", durata_task);
+    process_start(&avvia_dispositivo_process, NULL);
 }
 
 // Funzione per registrare il dispositivo con il server
 void registra_dispositivo(const char *server_url,  const char *tipo_dispositivo) {
-    static coap_endpoint_t server_endpoint;
-    static coap_message_t request[1];
-
-    // Configura l'endpoint del server
-    coap_endpoint_parse(server_url, strlen(server_url), &server_endpoint);
-    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
-    coap_set_header_uri_path(request, "register/");
-
-    // Crea il payload JSON per la registrazione
-    char payload[256];
-    snprintf(payload, sizeof(payload), "{\"type\": \"%s\", \"ip_address\": \"fd00::1\"}", tipo_dispositivo);
-
-    // Imposta il payload nella richiesta
-    coap_set_payload(request, (uint8_t *)payload, strlen(payload));
-
-    printf("Registrazione del dispositivo con il server: %s\n", payload);
-
-    // Invia la richiesta al server
-    COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
-
-    printf("Registrazione completata con successo.\n");
+    process_start(&registra_dispositivo_process, (void *)server_url);
+    
 }
 
 // Funzione per aggiornare l'orologio
@@ -322,7 +243,6 @@ void coap_message_handler(coap_message_t *request, coap_message_t *response, uin
 }
 
 // Processo principale
-PROCESS(smartplug_process, "Smart Plug Process");
 AUTOSTART_PROCESSES(&smartplug_process);
 
 PROCESS_THREAD(smartplug_process, ev, data) {
@@ -338,7 +258,7 @@ PROCESS_THREAD(smartplug_process, ev, data) {
     // Registra la risorsa CoAP per ricevere messaggi
     static coap_resource_t coap_resource;
     coap_activate_resource(&coap_resource, "gestione");
-    coap_resource.get_handler = coap_message_handler;
+    coap_resource.get_handler = 1;
 
     // Registra la risorsa CoAP per lo stato
     static coap_resource_t stato_resource;
@@ -368,6 +288,12 @@ PROCESS_THREAD(richiedi_dati_sensore_process, ev, data) {
 
     static coap_endpoint_t server_endpoint;
     static coap_message_t request[1];
+    static float *dato_ricevuto;
+    const char *server_ep;
+
+    // Recupera i dati passati al processo
+    server_ep = (const char *)data;
+    dato_ricevuto = (float *)data;
 
     coap_endpoint_parse(server_ep, strlen(server_ep), &server_endpoint);
     coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
@@ -377,5 +303,114 @@ PROCESS_THREAD(richiedi_dati_sensore_process, ev, data) {
 
     COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
 
+    // Estrai il valore dal payload e assegnalo a dato_ricevuto
+    const uint8_t *payload = NULL;
+    size_t len = coap_get_payload(request, &payload);
+    if (len > 0) {
+        sscanf((const char *)payload, "%f", dato_ricevuto);
+        printf("Dati ricevuti dal sensore: %.2f\n", *dato_ricevuto);
+    } else {
+        printf("Errore nella ricezione dei dati dal sensore.\n");
+    }
+
     PROCESS_END();
 }
+
+
+PROCESS_THREAD(disattiva_dispositivo_process, ev, data) {
+    PROCESS_BEGIN();
+
+    static coap_endpoint_t server_endpoint;
+    static coap_message_t request[1];
+
+    const char *server_url = "coap://[fd00::1]:5683/device_status";  // URL del server
+
+    // Imposta lo stato del dispositivo a 0 (Spento)
+    stato_dispositivo = 0;
+    printf("Dispositivo disattivato. Stato impostato a: %d (Spento)\n", stato_dispositivo);
+
+    // Configura l'endpoint del server
+    coap_endpoint_parse(server_url, strlen(server_url), &server_endpoint);
+    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
+    coap_set_header_uri_path(request, "device_status");
+
+    // Payload per notificare la disattivazione
+    const char *payload = "{\"tipo\": \"3\", \"status\": \"inactive\"}";
+    coap_set_payload(request, (uint8_t *)payload, strlen(payload));
+
+    printf("Invio segnale al server: %s\n", payload);
+
+    // Invia la richiesta al server
+    COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
+
+    printf("Segnale di disattivazione inviato al server con successo.\n");
+
+    PROCESS_END();
+}
+
+
+
+PROCESS_THREAD(avvia_dispositivo_process, ev, data) {
+    PROCESS_BEGIN();
+
+    static coap_endpoint_t server_endpoint;
+    static coap_message_t request[1];
+
+    const char *server_url = "coap://[fd00::1]:5683/device_status";  // URL del server
+
+    // Imposta lo stato del dispositivo a 1 (Attivo)
+    stato_dispositivo = 1;
+    printf("Dispositivo avviato. Stato impostato a: %d (Attivo)\n", stato_dispositivo);
+
+    // Configura l'endpoint del server
+    coap_endpoint_parse(server_url, strlen(server_url), &server_endpoint);
+    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
+    coap_set_header_uri_path(request, "device_status");
+
+    // Payload per notificare l'avvio
+    const char *payload = "{\"status\": \"active\"}";
+    coap_set_payload(request, (uint8_t *)payload, strlen(payload));
+
+    printf("Invio segnale al server: %s\n", payload);
+
+    // Invia la richiesta al server
+    COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
+
+    printf("Segnale di avvio inviato al server con successo.\n");
+
+    // Imposta il timer per disattivare il dispositivo dopo la durata del task
+    etimer_set(&task_timer, durata_task * CLOCK_SECOND);
+    printf("Timer impostato per disattivare il dispositivo dopo %d secondi.\n", durata_task);
+
+    PROCESS_END();
+}
+
+PROCESS_THREAD(registra_dispositivo_process, ev, data) {
+    PROCESS_BEGIN();
+
+    static coap_endpoint_t server_endpoint;
+    static coap_message_t request[1];
+    const char *server_url = (const char *)data;
+
+    // Configura l'endpoint del server
+    coap_endpoint_parse(server_url, strlen(server_url), &server_endpoint);
+    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
+    coap_set_header_uri_path(request, "register/");
+
+    // Crea il payload JSON per la registrazione
+    char payload[256];
+    snprintf(payload, sizeof(payload), "{\"type\": \"actuator\", \"ip_address\": \"fd00::1\"}");
+
+    // Imposta il payload nella richiesta
+    coap_set_payload(request, (uint8_t *)payload, strlen(payload));
+
+    printf("Registrazione del dispositivo con il server: %s\n", payload);
+
+    // Invia la richiesta al server
+    COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
+
+    printf("Registrazione completata con successo.\n");
+
+    PROCESS_END();
+}
+
