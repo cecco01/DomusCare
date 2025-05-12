@@ -1,6 +1,6 @@
 from mysql.connector import Error
 from coapthon.resources.resource import Resource
-from resources.database import Database
+from models.database import Database
 from coapthon.client.helperclient import HelperClient
 import json
 from coapthon import defines

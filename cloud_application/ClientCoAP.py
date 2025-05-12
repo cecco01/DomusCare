@@ -6,7 +6,7 @@ import json
 import sys
 import time
 import threading
-from resources.database import Database
+from models.database import Database
 
 class CoapClient:
 
