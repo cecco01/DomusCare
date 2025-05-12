@@ -26,8 +26,8 @@ CREATE TABLE data (
     id INT AUTO_INCREMENT PRIMARY KEY,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp dei dati
     date DATE DEFAULT CURRENT_DATE, 
-    solarpower FLOAT NOT NULL,                     -- Potenza pannelli (kW)
-    power FLOAT NOT NULL                           -- Potenza consumata (kW)
+    solarpower FLOAT DEFAULT NULL,                     -- Potenza pannelli (kW)
+    power FLOAT DEFAULT NULL                           -- Potenza consumata (kW)
     
 );
 
