@@ -10,9 +10,6 @@
 
 #define MAX_FEATURES 5     // Numero massimo di feature per i modelli (senza il timestamp anno)
 #define INTERVALLO_PREDIZIONE 900  // Intervallo di predizione in secondi (15 minuti)
-#define SOLAR_EP "coap://[fd00::2]:5683"
-#define POWER_EP "coap://[fd00::4]:5683"
-
 
 const char *server_ep = "coap://[fd00::1]:5683";  // Esempio di endpoint
 

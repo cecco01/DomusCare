@@ -23,9 +23,6 @@
 
 
 #define SERVER_EP "coap://[fd00::1]:5683"  // Indirizzo del server
-#define ACTUATOR_EP "coap://[fd00::3]:5683/gestione"  // Indirizzo dell'attuatore
-#define SENSOR_SOLAR_IP "coap://[fd00::2]:5683"  // Indirizzo IP del sensore solare
-
 
 #define MAX_REGISTRATION_RETRY 3
 

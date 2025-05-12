@@ -1,4 +1,0 @@
-fd00::1 server
-fd00::2 solar
-fd00::3 actuar 
-fd00::4 potenza
