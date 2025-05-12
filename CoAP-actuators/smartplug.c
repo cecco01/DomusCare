@@ -413,4 +413,3 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
 
     PROCESS_END();
 }
-
