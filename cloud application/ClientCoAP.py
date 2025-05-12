@@ -50,7 +50,8 @@ class CoapClient:
 
         sensors = {
             "power": {"status": 0, "ip": ""},
-            "solar": {"status": 0, "ip": ""}
+            "solar": {"status": 0, "ip": ""},
+            "actuator": {"status": 0, "ip": ""}  
         }
 
         try:
@@ -61,7 +62,7 @@ class CoapClient:
                 select_sensor_query = """
                     SELECT ip_address, type, status
                     FROM sensor
-                    WHERE type IN ('solar', 'power')
+                    WHERE type IN ('solar', 'power', 'actuator')
                 """
 
                 cursor.execute(select_sensor_query)
