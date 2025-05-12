@@ -13,7 +13,7 @@
 #include "dev/button-sensor.h"
 #endif
 
-#include "power_status.h"
+#include "resources/power_status.h"
 
 /* Log configuration */
 #include "sys/log.h"

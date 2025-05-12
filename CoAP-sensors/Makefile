@@ -1,4 +1,4 @@
-CONTIKI_PROJECT = panel counter
+CONTIKI_PROJECT = power solar
 
 all: $(CONTIKI_PROJECT)
 
@@ -8,7 +8,7 @@ all: $(CONTIKI_PROJECT)
 # Include CoAP resources
 MODULES_REL += ./resources
 
-CONTIKI=../../..
+CONTIKI = /home/iot_ubuntu_intel/contiki-ng
 
 # Include the CoAP implementation
 include $(CONTIKI)/Makefile.dir-variables

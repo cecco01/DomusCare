@@ -40,7 +40,7 @@ class Control(Resource):
                 self.payload = "Errore: nome del dispositivo mancante."
                 return self
 
-            self.update_device_status(nome, stato, tempo_limite)
+            self.update_device_status(nome, stato)
             self.payload = f"Stato del dispositivo '{nome}' aggiornato a {stato}."
             print(self.payload)
             return self
