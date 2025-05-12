@@ -21,7 +21,7 @@
 #define LOG_LEVEL LOG_LEVEL_APP
 
 #define SERVER_EP "coap://[fd00::1]:5683"
-#define ACTUATOR_EP "coap://[fd00::1]:5683/gestione"  // Endpoint dell'attuatore
+//#define ACTUATOR_EP "coap://[fd00::1]:5683/gestione"  // Endpoint dell'attuatore
 
 #define MAX_REGISTRATION_RETRY 3
 
