@@ -27,8 +27,7 @@ CREATE TABLE data (
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp dei dati
     date DATE DEFAULT CURRENT_DATE, 
     solarpower FLOAT NOT NULL,                     -- Potenza pannelli (kW)
-    power FLOAT NOT NULL,                          -- Potenza consumata (kW)
-    price FLOAT NOT NULL                           -- Prezzo dell'energia (USD/kWh)
+    power FLOAT NOT NULL                           -- Potenza consumata (kW)
     
 );
 
