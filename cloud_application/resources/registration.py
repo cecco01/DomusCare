@@ -1,6 +1,6 @@
 from mysql.connector import Error
 from coapthon.resources.resource import Resource
-from models.database import Database
+from resources.database import Database
 from coapthon.client.helperclient import HelperClient
 import json
 import time
@@ -9,7 +9,7 @@ import re
 from coapthon import defines
 from datetime import datetime
 
-class Control(Resource):
+class Registration(Resource):
 
     def __init__(self, name="Control"):
         super(Control, self).__init__(name)
