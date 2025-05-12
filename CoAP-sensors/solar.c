@@ -20,8 +20,6 @@
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_APP
 
-
-
 #define SERVER_EP "coap://[fd00::1]:5683"  // Indirizzo del server
 
 #define MAX_REGISTRATION_RETRY 3
@@ -150,7 +148,7 @@ PROCESS_THREAD(solar_sensor_process, ev, data) {
 
     // Imposta un timer per inviare i dati ogni 15 minuti
     etimer_set(&send_timer, CLOCK_SECOND * 900);
-
+    coap 
     while (1) {
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&send_timer));
 
@@ -180,3 +178,17 @@ PROCESS_THREAD(solar_sensor_process, ev, data) {
 
     PROCESS_END();
 }
+
+
+/* Dichiarazione della risorsa per il consumo energetico */
+static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer,
+                            uint16_t preferred_size, int32_t *offset);
+
+RESOURCE(res_solar,
+         "title=\"Produzione Energeticq\";rt=\"Text\"",
+         res_get_handler,
+         NULL,
+         NULL,
+         NULL);
+
+/* Implementazione del gestore GET per la risorsa */

@@ -33,7 +33,7 @@ static void res_event_handler(void){
 //quando un client CoAP richiede la risorsa, viene generato un payload JSON con il valore corrente
 static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
   coap_set_header_content_format(response, APPLICATION_JSON);
-  int payload_len = snprintf((char *)buffer, preferred_size, "{\"sensor\":\"SolarPower\", \"value\":%.2f}", current_solarpower);//cambia campo tipo del JSON
+  int payload_len = snprintf((char *)buffer, preferred_size, "{\"solar\":%.2f}", current_solarpower);//cambia campo tipo del JSON
   coap_set_payload(response, buffer, payload_len);
 
   LOG_INFO("Payload: %s\n", buffer);
