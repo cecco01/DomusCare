@@ -1,0 +1,4 @@
+fd00::1 server
+fd00::2 attuatore
+fd00::3 potenza
+fd00::4 pannello

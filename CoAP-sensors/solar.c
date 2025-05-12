@@ -20,8 +20,9 @@
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_APP
 
-#define SERVER_EP "coap://[fd00::1]:5683"
-#define ACTUATOR_EP "coap://[fd00::1]:5683/gestione"  // Endpoint dell'attuatore
+#define SERVER_EP "coap://[fd00::1]:5683"  // Indirizzo del server
+#define ACTUATOR_EP "coap://[fd00::3]:5683/gestione"  // Indirizzo dell'attuatore
+#define SENSOR_SOLAR_IP "fd00::2"  // Indirizzo IP del sensore solare
 
 #define MAX_REGISTRATION_RETRY 3
 
@@ -82,9 +83,10 @@ void client_chunk_handler(coap_message_t *response){//
      // Prepare the message
      coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
      coap_set_header_uri_path(request, "register/");//ricontrolla se register va bene...
-     const char msg[] = "SolarPw";
+     // During registration, send the IP address of the solar sensor
+     const char msg[] = "{\"type\": \"solar\", \"ip_address\": \"" SENSOR_SOLAR_IP "\"}";
      // Set payload
-     coap_set_payload(request, (uint8_t *)msg, sizeof(msg) - 1);
+     coap_set_payload(request, (uint8_t *)msg, strlen(msg));
  
      leds_single_on(LEDS_YELLOW);
  
