@@ -16,7 +16,7 @@
 static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 static void res_put_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 //definiamo una risorsa CoAP, GET per leggere lo stato, PUT per modificarlo(accendi/spegni)
-RESOURCE(res_Solarpower_status,"title=\"Coap SolarPower Status\";rt=\"SolarPower_status\"",res_get_handler,NULL,res_put_handler,NULL);
+RESOURCE(res_SolarPw_status,"title=\"Coap SolarPower Status\";rt=\"SolarPower_status\"",res_get_handler,NULL,res_put_handler,NULL);
 
 //handler per la modifica dello stato (PUT)
 static void res_put_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
