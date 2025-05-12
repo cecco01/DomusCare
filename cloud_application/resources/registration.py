@@ -46,7 +46,7 @@ class Registration(Resource):
                 return self
 
             # Inserisce il sensore nel database
-            self.register_sensor(sensor_type, ip_address)
+            self.register_sensor(sensor_type, ip_address, payload)
 
             # Se il tipo è 'actuator', invia un messaggio CoAP al dispositivo Smart Plug
             if sensor_type == "actuator":
@@ -103,12 +103,13 @@ class Registration(Resource):
             self.payload = None
             print(f"Error retrieving sensor data: {e}, Payload: {self.payload}")
 
-    def register_sensor(self, sensor_type, ip_address):
+    def register_sensor(self, sensor_type, ip_address, payload):
         """
-        Registra un sensore nel database.
+        Registra un sensore nel database e invia un messaggio agli attuatori non attivi.
 
         :param sensor_type: Tipo del sensore.
         :param ip_address: Indirizzo IP del sensore.
+        :param payload: Dati JSON ricevuti per il sensore.
         """
         if not self.connection.is_connected():
             raise Error("Connessione al database persa.")
@@ -120,11 +121,50 @@ class Registration(Resource):
         """
         cursor.execute(query, (sensor_type, ip_address, 0))
         self.connection.commit()
+
+        # Se il sensore è un actuator, aggiungilo anche nella tabella dispositivi
+        if sensor_type == "actuator":
+            dispositivo_query = """
+            INSERT INTO dispositivi (nome, stato, consumo_kwh, durata)
+            VALUES (%s, %s, %s, %s)
+            """
+            # Estrai i dati dal payload JSON
+            nome_dispositivo = payload.get("nome")
+            stato_dispositivo = payload.get("stato")
+            consumo_kwh = payload.get("consumo")
+            durata_task = payload.get("durata")
+            cursor.execute(dispositivo_query, (nome_dispositivo, stato_dispositivo, consumo_kwh, durata_task))
+            self.connection.commit()
+
         cursor.close()
+
+        # Invia il messaggio agli attuatori non attivi
+        if sensor_type in ["solar", "power"]:
+            self.notify_actuators()
+
+    def notify_actuators(self):
+        """
+        Recupera gli attuatori non attivi dal database e invia loro un messaggio di attivazione.
+        """
+        if not self.connection.is_connected():
+            raise Error("Connessione al database persa.")
+
+        cursor = self.connection.cursor()
+        query = """
+        SELECT ip_address FROM sensor
+        WHERE type = 'actuator'
+        """
+        cursor.execute(query)
+        actuators = cursor.fetchall()
+        cursor.close()
+
+        for actuator in actuators:
+            actuator_ip = actuator[0]
+            self.send_activation_message(actuator_ip)
 
     def send_activation_message(self, ip_address):
         """
-        Invia un messaggio CoAP al dispositivo Smart Plug per attivarlo con data e ora.
+        Invia un messaggio CoAP al dispositivo Smart Plug per attivarlo con data, ora e indirizzi IP dei sensori.
 
         :param ip_address: Indirizzo IP del dispositivo Smart Plug.
         """
@@ -134,12 +174,34 @@ class Registration(Resource):
         try:
             # Ottieni la data e l'ora correnti
             now = datetime.now()
+
+            # Recupera gli indirizzi IP dei sensori dal database
+            cursor = self.connection.cursor()
+            query = """
+            SELECT ip_address, type FROM sensor WHERE type IN ('solar', 'power')
+            """
+            cursor.execute(query)
+            sensors = cursor.fetchall()
+            cursor.close()
+
+            # Organizza gli indirizzi IP dei sensori
+            solar_ip = None
+            power_ip = None
+            for sensor in sensors:
+                if sensor[1] == "solar":
+                    solar_ip = sensor[0]
+                elif sensor[1] == "power":
+                    power_ip = sensor[0]
+
+            # Crea il payload JSON
             payload = {
                 "tipo": 0,
                 "ora": now.hour,
                 "minuti": now.minute,
                 "giorno": now.day,
-                "mese": now.month
+                "mese": now.month,
+                "solar_ip": solar_ip,
+                "power_ip": power_ip
             }
 
             # Invia il messaggio CoAP

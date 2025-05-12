@@ -36,7 +36,6 @@ DROP TABLE IF EXISTS dispositivi;
 -- Create the dispositivi table
 CREATE TABLE dispositivi (
     nome VARCHAR(255) PRIMARY KEY,
-    tipo VARCHAR(255) NOT NULL,
     stato INT NOT NULL DEFAULT 0,  -- 2=pronto, 1=attivo, 0=inattivo
     consumo_kwh FLOAT NOT NULL,    -- Consumo in kWh
     timestamp_attivazione TIMESTAMP DEFAULT NULL, -- Timestamp di attivazione
@@ -44,10 +43,7 @@ CREATE TABLE dispositivi (
 );
 
 -- Inserimento di dati plausibili nella tabella dispositivi
-INSERT INTO dispositivi (nome, tipo, stato, consumo_kwh, durata) VALUES
-('Lavatrice', 'Lavatrice', 0, 1.5, 60),
-('Asciugatrice', 'Asciugatrice', 0, 2.0, 90),
-('Lavastoviglie', 'Lavastoviglie', 0, 1.2, 45);
+
 
 -- Abilita il gestore di eventi MySQL (se non è già abilitato)
 SET GLOBAL event_scheduler = ON;

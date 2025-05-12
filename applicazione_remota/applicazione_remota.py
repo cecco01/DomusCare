@@ -89,26 +89,6 @@ def invia_richiesta_attuatore(ip_address, nuovo_stato, ore):
     finally:
         client.stop()
 
-# Funzione per inserire un nuovo dispositivo
-def inserisci_dispositivo(nome, tipo, consumo_kwh, durata):
-    client = HelperClient(server=(SERVER_IP, SERVER_PORT))
-    try:
-        payload = {
-            "nome": nome,
-            "tipo": tipo,
-            "consumo_kwh": consumo_kwh,
-            "durata": durata
-        }
-        response = client.post("register/", json.dumps(payload))
-        if response and response.code == 68:  # ACK
-            print(f"Dispositivo '{nome}' inserito con successo.")
-        else:
-            print(f"Errore nell'inserimento del dispositivo: {response.code if response else 'Nessuna risposta'}")
-    except Exception as e:
-        print(f"Errore nella richiesta CoAP: {e}")
-    finally:
-        client.stop()
-
 # Funzione per rimuovere un dispositivo
 def rimuovi_dispositivo(nome):
     client = HelperClient(server=(SERVER_IP, SERVER_PORT))
@@ -130,8 +110,7 @@ def main():
         print("\nGestione da terminale:")
         print("1. Mostra dispositivi")
         print("2. Cambia stato dispositivo")
-        print("3. Inserisci nuovo dispositivo")
-        print("4. Rimuovi dispositivo")
+        print("3. Rimuovi dispositivo")
         print("0. Esci")
         scelta = input()
 
@@ -143,12 +122,6 @@ def main():
             ore = int(input("Inserisci entro quante ore deve essere completata la task (se applicabile): ")) if nuovo_stato == 2 else 0
             cambia_stato_dispositivo(nome, nuovo_stato, ore)
         elif scelta == "3":
-            nome = input("Inserisci il nome del dispositivo: ")
-            tipo = input("Inserisci il tipo del dispositivo: ")
-            consumo_kwh = float(input("Inserisci il consumo in kWh: "))
-            durata = int(input("Inserisci la durata in minuti: "))
-            inserisci_dispositivo(nome, tipo, consumo_kwh, durata)
-        elif scelta == "4":
             nome = input("Inserisci il nome del dispositivo da rimuovere: ")
             rimuovi_dispositivo(nome)
         elif scelta == "0":
