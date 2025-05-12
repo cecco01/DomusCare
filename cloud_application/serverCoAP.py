@@ -4,7 +4,7 @@ from coapthon.server.coap import CoAP
 from resources.registration import Registration
 from resources.control import Control
 import json
-import resources.database as Database
+from core.database import Database
 
 
 class CoAPServer(CoAP):

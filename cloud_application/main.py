@@ -1,6 +1,6 @@
-from coapServer import CoAPServer
+from serverCoAP import CoAPServer
 
-from coapClient import CoapClient
+from ClientCoAP import CoapClient
 
 
 def main():
