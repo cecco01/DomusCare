@@ -49,10 +49,8 @@ class CoapClient:
     def retrieve_nodes_from_db(self):
 
         sensors = {
-            "pressure": {"status": 0, "ip": ""},
-            "vibration": {"status": 0, "ip": ""},
-            "voltage": {"status": 0, "ip": ""},
-            "rotation": {"status": 0, "ip": ""}
+            "power": {"status": 0, "ip": ""},
+            "solar": {"status": 0, "ip": ""}
         }
 
         try:
@@ -63,7 +61,7 @@ class CoapClient:
                 select_sensor_query = """
                     SELECT ip_address, type, status
                     FROM sensor
-                    WHERE type IN ('pressure', 'vibration', 'voltage', 'rotation')
+                    WHERE type IN ('solar', 'power')
                 """
 
                 cursor.execute(select_sensor_query)
