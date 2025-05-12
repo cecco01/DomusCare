@@ -5,18 +5,23 @@
 #include "coap-engine.h"
 #include "sys/etimer.h"
 #include "coap-blocking-api.h"
-#include "ML/smart_grid_model_consumption.h"
-#include "ML/smart_grid_model_production.h"
+#include "../ML/smart_grid_model_consumption.h"
+#include "../ML/smart_grid_model_production.h"
 
 #define MAX_FEATURES 5     // Numero massimo di feature per i modelli (senza il timestamp anno)
 #define INTERVALLO_PREDIZIONE 900  // Intervallo di predizione in secondi (15 minuti)
 #define SOLAR_EP "coap://[fd00::2]:5683"
 #define POWER_EP "coap://[fd00::4]:5683"
 
+
+const char *server_ep = "coap://[fd00::1]:5683";  // Esempio di endpoint
+
 static struct etimer efficient_timer;  // Timer per avviare il dispositivo nel momento più efficiente
 static struct etimer clock_timer;  // Timer per aggiornare l'orologio ogni minuto
 static struct etimer task_timer;  // Timer per disattivare il dispositivo dopo la durata del task
+
 static int tempo_limite = 0;  // Tempo in ore entro il quale il task deve essere completato
+
 static float consumo = 0.0;  // Consumo energetico corrente
 static float produzione = 0.0;  // Produzione energetica corrente
 static int ore = 0;  // Ore per il task
@@ -29,6 +34,22 @@ static float features_produzione[MAX_FEATURES];  // Array delle feature per il m
 // Risorsa CoAP per lo stato del dispositivo
 static int stato_dispositivo = 0;  // Stato del dispositivo: 0=Spento, 1=Attivo, 2=Pronto
 static float consumo_dispositivo = 1.5;  // Consumo energetico corrente
+static int numero_ripetizioni = 0;  // Dichiarazione globale
+static int orologio_attivo = 0;  // Flag per indicare se l'orologio è attivo
+void calcola_momento_migliore();
+void richiedi_dati_sensore(const char *server_ep, float *dato_ricevuto);
+void avvia_dispositivo();
+float smart_grid_model_consumption_regress1(const float *features, int num_features);
+float smart_grid_model_solar_regress1(const float *features, int num_features);
+void client_chunk_handler(coap_message_t *response) {
+    const uint8_t *payload = NULL;
+    size_t len = coap_get_payload(response, &payload);
+    if (len > 0) {
+        printf("Risposta ricevuta: %.*s\n", (int)len, (const char *)payload);
+    } else {
+        printf("Nessun payload ricevuto nella risposta.\n");
+    }
+}
 static void stato_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer,
                           uint16_t preferred_size, int32_t *offset) {
     const uint8_t *payload = NULL;
@@ -125,7 +146,12 @@ void calcola_momento_migliore() {
     } else {
         printf("Non è stato possibile trovare un momento con surplus energetico entro la prossima ora.\n");
         printf("Richiedo nuovi dati dai sensori e riprovo tra 15 minuti.\n");
-
+        numero_ripetizioni++;
+        if(numero_ripetizioni== tempo_limite*4) {
+            printf("Superato il numero massimo di tentativi. Avvio il dispositivo.\n");
+            avvia_dispositivo();
+            return;
+        }
         // Riprova tra 15 minuti
         etimer_set(&efficient_timer, INTERVALLO_PREDIZIONE * CLOCK_SECOND);
     }
@@ -270,21 +296,21 @@ void coap_message_handler(coap_message_t *request, coap_message_t *response, uin
             coap_set_payload(response, buffer, strlen((char *)buffer));
         } else if (tipo_messaggio == 2) {
             // Parsing per i dati di produzione solare
-            sscanf(payload_str, "{\"tipo\": %d, \"solar_power\": %f}", &tipo_messaggio, &produzione_corrente);
-            printf("Tipo: %d, Produzione solare ricevuta: %.2f kW\n", tipo_messaggio, produzione_corrente);
+            sscanf(payload_str, "{\"tipo\": %d, \"solar_power\": %f}", &tipo_messaggio, &produzione);
+            printf("Tipo: %d, Produzione solare ricevuta: %.2f kW\n", tipo_messaggio, produzione);
 
             // Risposta al server
             coap_set_status_code(response, CHANGED_2_04);// imposta il codice di stato della risposta a 2.04 Changed. Questo codice indica che la richiesta è stata elaborata con successo e che la risorsa è stata modificata. In pratica, quando un client invia una richiesta di modifica (ad esempio un PUT o un POST), il server può rispondere con CHANGED_2_04 per confermare che l'operazione è stata eseguita correttamente. 
-            snprintf((char *)buffer, preferred_size, "Produzione solare aggiornata: %.2f kW", produzione_corrente);
+            snprintf((char *)buffer, preferred_size, "Produzione solare aggiornata: %.2f kW", produzione);
             coap_set_payload(response, buffer, strlen((char *)buffer));
         } else if (tipo_messaggio == 3) {
             // Parsing per i dati di consumo energetico
-            sscanf(payload_str, "{\"tipo\": %d, \"consumo\": %f}", &tipo_messaggio, &consumo_corrente);
-            printf("Tipo: %d, Consumo energetico ricevuto: %.2f kW\n", tipo_messaggio, consumo_corrente);
+            sscanf(payload_str, "{\"tipo\": %d, \"consumo\": %f}", &tipo_messaggio, &consumo);
+            printf("Tipo: %d, Consumo energetico ricevuto: %.2f kW\n", tipo_messaggio, consumo);
 
             // Risposta al server
             coap_set_status_code(response, CHANGED_2_04);
-            snprintf((char *)buffer, preferred_size, "Consumo energetico aggiornato: %.2f kW", consumo_corrente);
+            snprintf((char *)buffer, preferred_size, "Consumo energetico aggiornato: %.2f kW", consumo);
             coap_set_payload(response, buffer, strlen((char *)buffer));
         } else {
             printf("Tipo di messaggio non supportato o non valido: %d\n", tipo_messaggio);
@@ -312,7 +338,7 @@ PROCESS_THREAD(smartplug_process, ev, data) {
     // Registra la risorsa CoAP per ricevere messaggi
     static coap_resource_t coap_resource;
     coap_activate_resource(&coap_resource, "gestione");
-    coap_resource.handler = coap_message_handler;
+    coap_resource.get_handler = coap_message_handler;
 
     // Registra la risorsa CoAP per lo stato
     static coap_resource_t stato_resource;
@@ -333,6 +359,23 @@ PROCESS_THREAD(smartplug_process, ev, data) {
             aggiorna_orologio();
         }
     }
+
+    PROCESS_END();
+}
+
+PROCESS_THREAD(richiedi_dati_sensore_process, ev, data) {
+    PROCESS_BEGIN();
+
+    static coap_endpoint_t server_endpoint;
+    static coap_message_t request[1];
+
+    coap_endpoint_parse(server_ep, strlen(server_ep), &server_endpoint);
+    coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
+    coap_set_header_uri_path(request, server_ep);
+
+    printf("Richiesta dati al sensore: %s\n", server_ep);
+
+    COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
 
     PROCESS_END();
 }
