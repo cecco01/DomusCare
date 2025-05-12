@@ -2,10 +2,10 @@ import mysql.connector
 from mysql.connector import Error
 from coapthon.server.coap import CoAP
 from resources.registration import Registration
-#ricontrolla nomi risorse
 from resources.control import Control
 import json
-from models.database import Database
+import resources.database as Database
+
 
 class CoAPServer(CoAP):
     
@@ -43,7 +43,7 @@ class CoAPServer(CoAP):
             self.connection.commit()
             cursor.close()
         except Error as e:
-            print(f"Error truncating sensor table: {e}")
+          print("Error flushing sensor table")
 
     def close(self):
         
