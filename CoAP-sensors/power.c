@@ -12,7 +12,6 @@
 #else
 #include "dev/button-sensor.h"
 #endif
-#include "resources/power_status.h"
 /* Log configuration */
 #include "sys/log.h"
 #define LOG_MODULE "App"
@@ -68,7 +67,6 @@ void client_chunk_handler(coap_message_t *response){//
  
    LOG_INFO("Starting power Server\n");
    coap_activate_resource(&res_power, "power");
-   coap_activate_resource(&res_consumo, "power/consumo");
  
    while (max_registration_retry != 0){
      /* -------------- REGISTRATION --------------*/
@@ -134,11 +132,4 @@ void client_chunk_handler(coap_message_t *response){//
 
 /* Risorsa per il consumo energetico */
 
-
-RESOURCE(res_power,
-         "title=\"Consumo Energetico\";rt=\"Text\"",
-         res_power_get_handler,
-         NULL,
-         NULL,
-         NULL);
 

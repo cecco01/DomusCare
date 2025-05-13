@@ -47,7 +47,7 @@ build/cooja/obj/solar.o: solar.c \
  /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-request-state.h \
  /home/iot_ubuntu_intel/contiki-ng/os/dev/button-hal.h \
  /home/iot_ubuntu_intel/contiki-ng/os/sys/ctimer.h \
- resources/solar_status.h /home/iot_ubuntu_intel/contiki-ng/os/sys/log.h \
+ /home/iot_ubuntu_intel/contiki-ng/os/sys/log.h \
  /home/iot_ubuntu_intel/contiki-ng/os/sys/log-conf.h
 /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/module-macros.h:
 /home/iot_ubuntu_intel/contiki-ng/os/contiki.h:
@@ -97,6 +97,5 @@ project-conf.h:
 /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-request-state.h:
 /home/iot_ubuntu_intel/contiki-ng/os/dev/button-hal.h:
 /home/iot_ubuntu_intel/contiki-ng/os/sys/ctimer.h:
-resources/solar_status.h:
 /home/iot_ubuntu_intel/contiki-ng/os/sys/log.h:
 /home/iot_ubuntu_intel/contiki-ng/os/sys/log-conf.h:

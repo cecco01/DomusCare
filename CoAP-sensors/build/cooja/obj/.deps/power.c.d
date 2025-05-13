@@ -1,9 +1,5 @@
-build/cooja/obj/res-power-status.o: resources/res-power-status.c \
+build/cooja/obj/power.o: power.c \
  /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/module-macros.h \
- /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-engine.h \
- /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap.h \
- /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-constants.h \
- /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-conf.h \
  /home/iot_ubuntu_intel/contiki-ng/os/contiki.h \
  /home/iot_ubuntu_intel/contiki-ng/arch/platform/cooja/./contiki-conf.h \
  project-conf.h \
@@ -27,6 +23,10 @@ build/cooja/obj/res-power-status.o: resources/res-power-status.c \
  /home/iot_ubuntu_intel/contiki-ng/arch/platform/cooja/./sys/cooja_mt.h \
  /home/iot_ubuntu_intel/contiki-ng/os/sys/pt.h \
  /home/iot_ubuntu_intel/contiki-ng/os/sys/clock.h \
+ /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-engine.h \
+ /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap.h \
+ /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-constants.h \
+ /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-conf.h \
  /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-transport.h \
  /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-endpoint.h \
  /home/iot_ubuntu_intel/contiki-ng/os/net/ipv6/uip.h \
@@ -40,13 +40,16 @@ build/cooja/obj/res-power-status.o: resources/res-power-status.c \
  /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-observe.h \
  /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-separate.h \
  /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-observe-client.h \
- resources/power_status.h /home/iot_ubuntu_intel/contiki-ng/os/sys/log.h \
+ /home/iot_ubuntu_intel/contiki-ng/os/dev/leds.h \
+ /home/iot_ubuntu_intel/contiki-ng/os/dev/gpio-hal.h \
+ /home/iot_ubuntu_intel/contiki-ng/arch/platform/cooja/./dev/gpio-hal-arch.h \
+ /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-blocking-api.h \
+ /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-request-state.h \
+ /home/iot_ubuntu_intel/contiki-ng/os/dev/button-hal.h \
+ /home/iot_ubuntu_intel/contiki-ng/os/sys/ctimer.h \
+ /home/iot_ubuntu_intel/contiki-ng/os/sys/log.h \
  /home/iot_ubuntu_intel/contiki-ng/os/sys/log-conf.h
 /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/module-macros.h:
-/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-engine.h:
-/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap.h:
-/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-constants.h:
-/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-conf.h:
 /home/iot_ubuntu_intel/contiki-ng/os/contiki.h:
 /home/iot_ubuntu_intel/contiki-ng/arch/platform/cooja/./contiki-conf.h:
 project-conf.h:
@@ -70,6 +73,10 @@ project-conf.h:
 /home/iot_ubuntu_intel/contiki-ng/arch/platform/cooja/./sys/cooja_mt.h:
 /home/iot_ubuntu_intel/contiki-ng/os/sys/pt.h:
 /home/iot_ubuntu_intel/contiki-ng/os/sys/clock.h:
+/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-engine.h:
+/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap.h:
+/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-constants.h:
+/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-conf.h:
 /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-transport.h:
 /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-endpoint.h:
 /home/iot_ubuntu_intel/contiki-ng/os/net/ipv6/uip.h:
@@ -83,6 +90,12 @@ project-conf.h:
 /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-observe.h:
 /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-separate.h:
 /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-observe-client.h:
-resources/power_status.h:
+/home/iot_ubuntu_intel/contiki-ng/os/dev/leds.h:
+/home/iot_ubuntu_intel/contiki-ng/os/dev/gpio-hal.h:
+/home/iot_ubuntu_intel/contiki-ng/arch/platform/cooja/./dev/gpio-hal-arch.h:
+/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-blocking-api.h:
+/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-request-state.h:
+/home/iot_ubuntu_intel/contiki-ng/os/dev/button-hal.h:
+/home/iot_ubuntu_intel/contiki-ng/os/sys/ctimer.h:
 /home/iot_ubuntu_intel/contiki-ng/os/sys/log.h:
 /home/iot_ubuntu_intel/contiki-ng/os/sys/log-conf.h:
