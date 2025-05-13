@@ -25,7 +25,7 @@ static double current_power = 0;//memorizza l'ultimo valore generato
 //simula un nuovo valore e notifica tutti i CoAP client che stanno osservando la risorsa
 static void res_event_handler(void){
   current_power = generate_gaussian(MEAN, STDDEV);
-  LOG_INFO("Payload to be sent: {\"sensor\":\"power\", \"value\":%.2f}\n", current_power);//cambia campo tipo del JSON
+  LOG_INFO("Payload to be sent: {\"t\":\"power\", \"value\":%.2f}\n", current_power);//cambia campo tipo del JSON
   coap_notify_observers(&res_power);
 }
 

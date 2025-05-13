@@ -38,7 +38,7 @@ class Registration(Resource):
         try:
             # Parsing del payload JSON
             payload = json.loads(request.payload)
-            sensor_type = payload.get("type")
+            sensor_type = payload.get("t")
             ip_address = request.source #payload.get("ip_address")
 
             if not sensor_type or not ip_address:
@@ -129,10 +129,10 @@ class Registration(Resource):
             VALUES (%s, %s, %s, %s)
             """
             # Estrai i dati dal payload JSON
-            nome_dispositivo = payload.get("nome")
-            stato_dispositivo = payload.get("stato")
-            consumo_kwh = payload.get("consumo")
-            durata_task = payload.get("durata")
+            nome_dispositivo = payload.get("n")
+            stato_dispositivo = payload.get("s")
+            consumo_kwh = payload.get("c")
+            durata_task = payload.get("d")
             cursor.execute(dispositivo_query, (nome_dispositivo, stato_dispositivo, consumo_kwh, durata_task))
             self.connection.commit()
 
