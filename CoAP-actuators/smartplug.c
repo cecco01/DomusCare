@@ -403,7 +403,7 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
     coap_set_header_uri_path(request, "register/");
     while (!is_registered) {
         char payload[256];
-        snprintf(payload, sizeof(payload), "{\"t\": \"a\" ,\"n\": %s , \"s\": %d, \"c\": %.2f, \"d\": %d }", nome_dispositivo, stato_dispositivo, consumo_dispositivo, durata);
+        snprintf(payload, sizeof(payload), "{\"t\": \"actuator\",\"n\": %s , \"s\": %d, \"c\": %.2f, \"d\": %d }", nome_dispositivo, stato_dispositivo, consumo_dispositivo, durata);
 
         // Imposta il payload nella richiesta
         coap_set_payload(request, (uint8_t *)payload, strlen(payload));

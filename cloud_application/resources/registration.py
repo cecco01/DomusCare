@@ -122,7 +122,7 @@ class Registration(Resource):
         INSERT INTO sensor (type, ip_address, status)
         VALUES (%s, %s, %s)
         """
-        cursor.execute(query, (sensor_type, ip_address, 0))
+        cursor.execute(query, (str(sensor_type), str(ip_address), int(1)))
         self.connection.commit()
         print(f"Registrato il sensore di tipo {sensor_type} con indirizzo IP {ip_address}.")
         # Se il sensore è un actuator, aggiungilo anche nella tabella dispositivi
