@@ -88,7 +88,7 @@ void client_chunk_handler(coap_message_t *response){//
     coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
      coap_set_header_uri_path(request, "register/");//ricontrolla se register va bene...
      // During registration, send the IP address of the solar sensor
-     const char msg[] = "{\"type\": \"solar\"}";
+     const char msg[] = "{\"t\": \"solar\"}";
      // Set payload
      coap_set_payload(request, (uint8_t *)msg, strlen(msg));
  

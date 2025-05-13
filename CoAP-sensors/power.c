@@ -84,7 +84,10 @@ void client_chunk_handler(coap_message_t *response){//
      // Prepare the message
      coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
      coap_set_header_uri_path(request, "register/");//ricontrolla se register va bene
-     const char msg[] = "power";
+     const char msg[] = "{\"t\": power"};
+     
+        
+
      // Set payload
      coap_set_payload(request, (uint8_t *)msg, sizeof(msg) - 1);
  
