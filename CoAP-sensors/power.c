@@ -47,7 +47,6 @@ void client_chunk_handler(coap_message_t *response){//
  * The build system automatically compiles the resources in the corresponding sub-directory.
  */
  extern coap_resource_t res_power;
- extern coap_resource_t res_power_status;
  extern coap_resource_t res_consumo;
  extern void res_power_get_handler(coap_message_t *request, coap_message_t *response,
                             uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
@@ -74,7 +73,6 @@ void client_chunk_handler(coap_message_t *response){//
  
    LOG_INFO("Starting power Server\n");
    coap_activate_resource(&res_power, "power");
-   coap_activate_resource(&res_power_status, "power/status");
    coap_activate_resource(&res_consumo, "power/consumo");
  
    while (max_registration_retry != 0){

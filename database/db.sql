@@ -49,7 +49,7 @@ SET GLOBAL event_scheduler = ON;
 
 -- Crea un evento per aggiornare lo stato dei dispositivi
 DELIMITER $$
-
+DROP EVENT IF EXISTS aggiorna_stato_dispositivi;
 CREATE EVENT aggiorna_stato_dispositivi
 ON SCHEDULE EVERY 1 MINUTE
 DO
@@ -63,7 +63,7 @@ DELIMITER ;
 
 -- Creazione del trigger per aggiornare il consumo totale
 DELIMITER $$
-
+Drop TRIGGER IF EXISTS aggiorna_consumo_dispositivi;
 CREATE TRIGGER aggiorna_consumo_dispositivi
 AFTER INSERT ON data
 FOR EACH ROW

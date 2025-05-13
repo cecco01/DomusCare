@@ -13,7 +13,6 @@
 #include "dev/button-sensor.h"
 #endif
 
-#include "resources/solar_status.h"
 
 /* Log configuration */
 #include "sys/log.h"
@@ -54,7 +53,6 @@ void client_chunk_handler(coap_message_t *response){//
  * The build system automatically compiles the resources in the corresponding sub-directory.
  */
  extern coap_resource_t res_SolarPw;
- extern coap_resource_t res_SolarPw_status;
  
  static struct etimer e_timer, sleep_timer;
  
@@ -78,7 +76,6 @@ void client_chunk_handler(coap_message_t *response){//
  
    LOG_INFO("Starting SolarPw Server\n");
    coap_activate_resource(&res_SolarPw, "SolarPw");
-   coap_activate_resource(&res_SolarPw_status, "SolarPw/status");
  
    while (max_registration_retry != 0){
      /* -------------- REGISTRATION --------------*/

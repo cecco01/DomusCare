@@ -1,14 +1,12 @@
 from serverCoAP import CoAPServer
 
-from ClientCoAP import CoapClient
+
 
 
 def main():
     host = "::"
     port = 5683
     server = CoAPServer(host, port)
-    client = CoapClient()
-
     try:
         print("CoAP server start")
         server.listen(10)
