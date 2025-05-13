@@ -34,7 +34,7 @@ static int stato_dispositivo = 0;  // Stato del dispositivo: 0=Spento, 1=Attivo,
 static float consumo_dispositivo = 1.5;  // Consumo energetico corrente
 static int numero_ripetizioni = 0;  // Dichiarazione globale
 static int orologio_attivo = 0;  // Flag per indicare se l'orologio è attivo
-
+static int durata = 60;
 
 PROCESS(avvia_dispositivo_process, "Avvia Dispositivo Process");
 PROCESS(richiedi_dati_sensore_process, "Richiedi Dati Sensore Process");
@@ -47,7 +47,7 @@ void richiedi_dati_sensore(const char *server_ep, float *dato_ricevuto);
 void avvia_dispositivo();
 float model_consumption_regress1(const float *features, int num_features);
 float model_production_regress1(const float *features, int num_features);
-
+static bool is_registered = false;  // Flag per indicare se il dispositivo è registrato
 
 void client_chunk_handler(coap_message_t *response) {
     const uint8_t *payload = NULL;
@@ -57,6 +57,12 @@ void client_chunk_handler(coap_message_t *response) {
     } else {
         printf("Nessun payload ricevuto nella risposta.\n");
     }
+}
+void client_registration_handler(coap_message_t *response) {
+    const uint8_t *payload = NULL;
+    size_t len = coap_get_payload(response, &payload);
+    if (len > 0) 
+    is_registered = true;
 }
 
 static void stato_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer,
@@ -395,18 +401,21 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
     coap_endpoint_parse(server_url, strlen(server_url), &server_endpoint);
     coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
     coap_set_header_uri_path(request, "register/");
+    while (!is_registered) {
+        char payload[256];
+        snprintf(payload, sizeof(payload), "{\"t\": \"a\" ,\"n\": %s , \"s\": %d, \"c\": %.2f, \"d\": %d }", nome_dispositivo, stato_dispositivo, consumo_dispositivo, durata);
 
+        // Imposta il payload nella richiesta
+        coap_set_payload(request, (uint8_t *)payload, strlen(payload));
+
+        printf("Registrazione del dispositivo con il server: %s\n", payload);
+
+        // Invia la richiesta al server
+        COAP_BLOCKING_REQUEST(&server_endpoint, request, client_registration_handler);
+        is_registered = 0;  // Imposta il flag di registrazione a true
+    }
     // Crea il payload JSON per la registrazione
-    char payload[256];
-    snprintf(payload, sizeof(payload), "{\"type\": \"actuator\" ,\"nome\": %s , \"status\": %d, \"consumption\": %.2f}", nome_dispositivo, stato_dispositivo, consumo_dispositivo);
-
-    // Imposta il payload nella richiesta
-    coap_set_payload(request, (uint8_t *)payload, strlen(payload));
-
-    printf("Registrazione del dispositivo con il server: %s\n", payload);
-
-    // Invia la richiesta al server
-    COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
+    
 
     printf("Registrazione completata con successo.\n");
 
