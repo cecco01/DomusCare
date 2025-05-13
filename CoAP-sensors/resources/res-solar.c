@@ -26,7 +26,7 @@ static double current_solarpower = 0;//memorizza l'ultimo valore generato
 //simula un nuovo valore e notifica tutti i CoAP client che stanno osservando la risorsa
 static void res_event_handler(void){
   current_solarpower = generate_gaussian(MEAN, STDDEV);
-  LOG_INFO("Payload to be sent: {\"t\":\"SolarPower\", \"value\":%.2f}\n", current_solarpower);//cambia campo tipo del JSON
+  LOG_INFO("Payload to be sent: {\"t\":\"solar\",\"value\" : %.2f}\n", current_solarpower);//cambia campo tipo del JSON
   coap_notify_observers(&res_SolarPw);
 }
 

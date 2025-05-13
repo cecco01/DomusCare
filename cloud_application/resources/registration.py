@@ -116,13 +116,13 @@ class Registration(Resource):
         """
         if not self.connection.is_connected():
             raise Error("Connessione al database persa.")
-
+        print(f'Creo il cursore, ip_address: {ip_address}, sensor_type: {sensor_type}')
         cursor = self.connection.cursor()
         query = """
         INSERT INTO sensor (type, ip_address)
-        VALUES (%s, %s, %s)
+        VALUES (%s, %s)
         """
-        cursor.execute(query, (str(sensor_type), str(ip_address), int(1)))
+        cursor.execute(query, (str(sensor_type), str(ip_address)))
         self.connection.commit()
         print(f"Registrato il sensore di tipo {sensor_type} con indirizzo IP {ip_address}.")
         # Se il sensore è un actuator, aggiungilo anche nella tabella dispositivi

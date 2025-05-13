@@ -68,17 +68,13 @@ CREATE TRIGGER aggiorna_consumo_dispositivi
 AFTER INSERT ON data
 FOR EACH ROW
 BEGIN
-    -- Calcola il consumo totale dei dispositivi attivi
     DECLARE consumo_totale FLOAT;
     SELECT SUM(consumo_kwh) INTO consumo_totale
     FROM dispositivi
     WHERE stato = 1;
 
-    -- Aggiungi il consumo totale al valore di power nella nuova riga
     IF consumo_totale IS NOT NULL THEN
-        UPDATE data
-        SET power = NEW.power + consumo_totale
-        WHERE id = NEW.id;
+        SET NEW.power = NEW.power + consumo_totale;
     END IF;
 END$$
 

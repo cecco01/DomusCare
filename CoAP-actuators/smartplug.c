@@ -412,11 +412,9 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
 
         // Invia la richiesta al server
         COAP_BLOCKING_REQUEST(&server_endpoint, request, client_registration_handler);
-        is_registered = 0;  // Imposta il flag di registrazione a true
+        
     }
     // Crea il payload JSON per la registrazione
-    
-
     printf("Registrazione completata con successo.\n");
 
     PROCESS_END();
