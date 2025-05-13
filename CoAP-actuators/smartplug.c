@@ -62,10 +62,10 @@ void client_chunk_handler(coap_message_t *response) {
 void client_registration_handler(coap_message_t *response) {
     const uint8_t *payload = NULL;
     size_t len = coap_get_payload(response, &payload);
-    if (len > 0) 
+    if (len > 0) {
         is_registered = true;
         printf("Registrazione riuscita: %.*s\n", (int)len, (const char *)payload);
-    else {
+    } else {
         is_registered = false;
         number_of_retries++;
         printf("Registrazione non riuscita. Tentativo %d \n", number_of_retries);
@@ -418,9 +418,6 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
 
         // Imposta il payload nella richiesta
         coap_set_payload(request, (uint8_t *)payload, strlen(payload));
-
-        printf("Registrazione del dispositivo con il server: %s\n", payload);
-
         // Invia la richiesta al server
         COAP_BLOCKING_REQUEST(&server_endpoint, request, client_registration_handler);
         if(!is_registered) {

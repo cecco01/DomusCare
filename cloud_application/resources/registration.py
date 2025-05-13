@@ -42,6 +42,9 @@ class Registration(Resource):
             sensor_type = payload.get("t")
             ip_address = request.source #payload.get("ip_address")
 
+            print(f"Payload ricevuto: {request.payload}")
+            print(f"Tipo: {sensor_type}, IP: {ip_address}")
+
             if not sensor_type or not ip_address:
                 print("Tipo o indirizzo IP mancante.")
                 self.payload = "Errore: tipo o indirizzo IP mancante."
@@ -208,6 +211,7 @@ class Registration(Resource):
             }
 
             # Invia il messaggio CoAP
+            print(f"Invio messaggio CoAP a {ip_address} con payload: {payload}")
             response = client.post("gestione", json.dumps(payload))
             if response:
                 print(f"Messaggio inviato al dispositivo Smart Plug: {payload}")
