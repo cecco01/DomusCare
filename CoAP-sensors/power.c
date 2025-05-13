@@ -12,16 +12,12 @@
 #else
 #include "dev/button-sensor.h"
 #endif
-
 #include "resources/power_status.h"
-
 /* Log configuration */
 #include "sys/log.h"
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_APP
-
 #define SERVER_EP "coap://[fd00::1]:5683"
-
 #define MAX_REGISTRATION_RETRY 3
 
 static int max_registration_retry = MAX_REGISTRATION_RETRY;
@@ -47,7 +43,6 @@ void client_chunk_handler(coap_message_t *response){//
  * The build system automatically compiles the resources in the corresponding sub-directory.
  */
  extern coap_resource_t res_power;
- extern coap_resource_t res_consumo;
  extern void res_power_get_handler(coap_message_t *request, coap_message_t *response,
                             uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
  
@@ -103,7 +98,6 @@ void client_chunk_handler(coap_message_t *response){//
    etimer_set(&e_timer, CLOCK_SECOND * 10);
  
    while (1){
- 
      PROCESS_WAIT_EVENT();
  
      if (ev == PROCESS_EVENT_TIMER && data == &e_timer){
@@ -141,7 +135,7 @@ void client_chunk_handler(coap_message_t *response){//
 /* Risorsa per il consumo energetico */
 
 
-RESOURCE(res_consumo,
+RESOURCE(res_power,
          "title=\"Consumo Energetico\";rt=\"Text\"",
          res_power_get_handler,
          NULL,
