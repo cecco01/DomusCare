@@ -43,6 +43,7 @@ class Registration(Resource):
             ip_address = request.source #payload.get("ip_address")
 
             print(f"Payload ricevuto: {request.payload}")
+            print(f"Dimensione del payload: {len(request.payload)}")
             print(f"Tipo: {sensor_type}, IP: {ip_address}")
 
             if not sensor_type or not ip_address:

@@ -351,6 +351,7 @@ PROCESS_THREAD(disattiva_dispositivo_process, ev, data) {
     coap_set_payload(request, (uint8_t *)payload, strlen(payload));
 
     printf("Invio segnale al server: %s\n", payload);
+    printf("Dimensione del payload: %zu\n", strlen(payload));
 
     // Invia la richiesta al server
     COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
