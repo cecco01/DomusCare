@@ -125,7 +125,7 @@ class Control(Resource):
         try:
             cursor = self.connection.cursor()
             query = """
-            SELECT ip_address, type, status
+            SELECT ip_address, type
             FROM sensor
             WHERE type = %s
             """
@@ -134,7 +134,7 @@ class Control(Resource):
             cursor.close()
 
             if sensor_data:
-                sensor = {row[1]: {"status": int(row[2]), "ip_address": row[0]} for row in sensor_data}
+                sensor = {row[1]: {"ip_address": row[0]} for row in sensor_data}
                 self.payload = json.dumps(sensor, separators=(',', ':'))
                 print(f"Payload: {self.payload}")
             else:
