@@ -17,33 +17,32 @@ class CoapClient:
         self.period = 40
         self.check_sensors()
 
-    def check_sensors(self):
-
-        timer = threading.Timer(self.period, self.check_sensors)
-        timer.setDaemon(True)
-        timer.start()
-
-        
-        sensors = self.retrieve_nodes_from_db()
-
-        if sensors is None:
-            return
-
-        for key, value in sensors.items():
-
-            if value['ip'] == "":
-                continue
-
-            print (f"Checking {key} sensor at {value['ip']}")
-
-            current_status = self.check_sensor_status(value['ip'], key + "/status")
-
-            if current_status != value['status']:
-               print(f"Sensor {key} status changed from {value['status']} to {current_status}")
-               
-               self.update_sensor_status(key, value['ip'], current_status)
-
-        
+  #  def check_sensors(self):
+#
+ #       timer = threading.Timer(self.period, self.check_sensors)
+  #      timer.setDaemon(True)
+   #     timer.start()
+#
+ #       
+  #      sensors = self.retrieve_nodes_from_db()
+#
+ #       if sensors is None:
+  #          return
+#
+ #       for key, value in sensors.items():
+#
+ #           if value['ip'] == "":
+  #              continue
+#
+ #           print (f"Checking {key} sensor at {value['ip']}")
+#
+ #           current_status = self.check_sensor_status(value['ip'], key + "/status")
+#
+ #           if current_status != value['status']:
+  #             print(f"Sensor {key} status changed from {value['status']} to {current_status}")
+   #            
+    #           self.update_sensor_status(key, value['ip'], current_status)
+   
 
 
     def retrieve_nodes_from_db(self):
@@ -85,30 +84,15 @@ class CoapClient:
             return None
             
 
-    def check_sensor_status(self, ip_address, resource):
+    def check_sensor_status(self, ip_address, resource_path):
+        # Estrai solo l'indirizzo IP dalla tupla
+        if isinstance(ip_address, tuple):
+            ip_address = ip_address[0]
 
-        port = 5683
-        client = HelperClient(server=(ip_address, port))
-
-        max_attempts = 3
-
-        for attempt in range(max_attempts):
-            try:
-                response = client.get(resource)
-
-                client.stop()
-
-                data = json.loads(response.payload)
-
-                return data['status']
-            
-            except Exception as e:
-                print(f"Error: {e}")
-                client.stop()
-
-        print(f"Failed to get status of sensor at {ip_address}")        
-
-        return 0
+        client = HelperClient(server=(ip_address, 5683))
+        response = client.get(resource_path)
+        client.stop()
+        return response.payload if response else None
 
     def update_sensor_status(self, type, ip_address, status):
             
@@ -135,9 +119,6 @@ class CoapClient:
                    
             except Error as e:
                 print(f"Error updating sensor status: {e}")
-               
-            
-                
 
 
 
@@ -149,5 +130,8 @@ class CoapClient:
 
 
 
-   
-        
+
+
+
+
+

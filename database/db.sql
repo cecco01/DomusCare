@@ -13,9 +13,8 @@ DROP TABLE IF EXISTS sensor;
 -- Create the sensor table
 CREATE TABLE sensor (
     ip_address VARCHAR(100) PRIMARY KEY,
-    type VARCHAR(100),
-    status INT
-);
+    type VARCHAR(100) NOT NULL
+    );
 
 -- Drop the data table if it exists
 DROP TABLE IF EXISTS data;

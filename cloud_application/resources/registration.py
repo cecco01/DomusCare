@@ -74,7 +74,7 @@ class Registration(Resource):
         try:
             cursor = self.connection.cursor()
             select_sensor_query = """
-            SELECT ip_address, type, status
+            SELECT ip_address, type
             FROM sensor
             WHERE type = %s
             """
@@ -87,10 +87,10 @@ class Registration(Resource):
 
             if sensor_data:
                 for row in sensor_data:
-                    ip_address, type, status = row
-                    sensor[type] = {"status": int(status), "ip_address": ip_address}
+                    ip_address, type = row
+                    sensor[type] = {"ip_address": ip_address}
 
-                if sensor[type]["status"] == 1:
+                
                     response = {
                         "sensor": type,
                         "ip_address": sensor[type]["ip_address"]
@@ -119,7 +119,7 @@ class Registration(Resource):
 
         cursor = self.connection.cursor()
         query = """
-        INSERT INTO sensor (type, ip_address, status)
+        INSERT INTO sensor (type, ip_address)
         VALUES (%s, %s, %s)
         """
         cursor.execute(query, (str(sensor_type), str(ip_address), int(1)))
