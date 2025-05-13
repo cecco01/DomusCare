@@ -85,7 +85,7 @@ void client_chunk_handler(coap_message_t *response){//
      // Populate the coap_endpoint_t data structure
      coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &main_server_ep);
      // Prepare the message
-     coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
+    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
      coap_set_header_uri_path(request, "register/");//ricontrolla se register va bene...
      // During registration, send the IP address of the solar sensor
      const char msg[] = "{\"type\": \"solar\"}";
