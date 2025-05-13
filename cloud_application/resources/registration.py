@@ -35,6 +35,7 @@ class Registration(Resource):
         Gestisce la registrazione di un sensore. Se il tipo è 'actuator',
         invia un messaggio CoAP al dispositivo Smart Plug con data e ora.
         """
+        print(f"RENDER POST - Request parameters: {request.uri_query}")
         try:
             # Parsing del payload JSON
             payload = json.loads(request.payload)
@@ -42,10 +43,12 @@ class Registration(Resource):
             ip_address = request.source #payload.get("ip_address")
 
             if not sensor_type or not ip_address:
+                print("Tipo o indirizzo IP mancante.")
                 self.payload = "Errore: tipo o indirizzo IP mancante."
                 return self
 
             # Inserisce il sensore nel database
+            print(f"tipo: {sensor_type}, ip_address: {ip_address}")
             self.register_sensor(sensor_type, ip_address, payload)
 
             # Se il tipo è 'actuator', invia un messaggio CoAP al dispositivo Smart Plug
@@ -121,7 +124,7 @@ class Registration(Resource):
         """
         cursor.execute(query, (sensor_type, ip_address, 0))
         self.connection.commit()
-
+        print(f"Registrato il sensore di tipo {sensor_type} con indirizzo IP {ip_address}.")
         # Se il sensore è un actuator, aggiungilo anche nella tabella dispositivi
         if sensor_type == "actuator":
             dispositivo_query = """
@@ -135,7 +138,7 @@ class Registration(Resource):
             durata_task = payload.get("d")
             cursor.execute(dispositivo_query, (nome_dispositivo, stato_dispositivo, consumo_kwh, durata_task))
             self.connection.commit()
-
+            print(f"Registrato il dispositivo {nome_dispositivo} con stato {stato_dispositivo}, consumo {consumo_kwh} kWh e durata {durata_task} ore.")
         cursor.close()
 
         # Invia il messaggio agli attuatori non attivi
