@@ -12,12 +12,13 @@
 #define INTERVALLO_PREDIZIONE 900  // Intervallo di predizione in secondi (15 minuti)
 
 const char *server_ep = "coap://[fd00::1]:5683";  // Esempio di endpoint
+
 static char SOLAR_EP[64];  // Buffer per l'indirizzo IP del sensore solare
 static char POWER_EP[64];  // Buffer per l'indirizzo IP del sensore di consumo
 static struct etimer efficient_timer;  // Timer per avviare il dispositivo nel momento più efficiente
 static struct etimer clock_timer;  // Timer per aggiornare l'orologio ogni minuto
 static struct etimer task_timer;  // Timer per disattivare il dispositivo dopo la durata del task
-
+static struct etimer sleep_timer;
 static int tempo_limite = 0;  // Tempo in ore entro il quale il task deve essere completato
 static char *nome_dispositivo = "Lavatrice";  // Nome del dispositivo
 static float consumo = 0.0;  // Consumo energetico corrente
@@ -48,7 +49,7 @@ void avvia_dispositivo();
 float model_consumption_regress1(const float *features, int num_features);
 float model_production_regress1(const float *features, int num_features);
 static bool is_registered = false;  // Flag per indicare se il dispositivo è registrato
-
+static int number_of_retries = 0;  // Numero di tentativi di registrazione
 void client_chunk_handler(coap_message_t *response) {
     const uint8_t *payload = NULL;
     size_t len = coap_get_payload(response, &payload);
@@ -62,7 +63,13 @@ void client_registration_handler(coap_message_t *response) {
     const uint8_t *payload = NULL;
     size_t len = coap_get_payload(response, &payload);
     if (len > 0) 
-    is_registered = true;
+        is_registered = true;
+        printf("Registrazione riuscita: %.*s\n", (int)len, (const char *)payload);
+    else {
+        is_registered = false;
+        number_of_retries++;
+        printf("Registrazione non riuscita. Tentativo %d \n", number_of_retries);
+    }
 }
 
 static void stato_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer,
@@ -403,6 +410,10 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
     coap_set_header_uri_path(request, "register/");
     while (!is_registered) {
         char payload[256];
+        //avvia il timer di 30 secondi
+        
+        
+        printf("invio al indirizzo ip del server %s: {\"t\": \"actuator\", \"n\": %s , \"s\": %d, \"c\": %.2f, \"d\": %d } \n: ", server_url, nome_dispositivo, stato_dispositivo, consumo_dispositivo, durata);
         snprintf(payload, sizeof(payload), "{\"t\": \"actuator\", \"n\": %s , \"s\": %d, \"c\": %.2f, \"d\": %d }", nome_dispositivo, stato_dispositivo, consumo_dispositivo, durata);
 
         // Imposta il payload nella richiesta
@@ -412,7 +423,10 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
 
         // Invia la richiesta al server
         COAP_BLOCKING_REQUEST(&server_endpoint, request, client_registration_handler);
-        
+        if(!is_registered) {
+            etimer_set(&sleep_timer, 30 * CLOCK_SECOND);
+            PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&sleep_timer));
+        } 
     }
     // Crea il payload JSON per la registrazione
     printf("Registrazione completata con successo.\n");
