@@ -25,12 +25,19 @@
 #define MAX_REGISTRATION_RETRY 3
 
 static int max_registration_retry = MAX_REGISTRATION_RETRY;
-
+extern void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 void client_chunk_handler(coap_message_t *response){//
   if (response == NULL){
     LOG_ERR("Request timed out\n");
   }
   else{
+    const uint8_t *payload = NULL;
+    int len = coap_get_payload(response, &payload);
+    if (len > 0 && payload != NULL) {
+        LOG_INFO("Payload: %.*s\n", len, (char *)payload);
+    } else {
+        LOG_ERR("Payload is NULL or empty\n");
+    }
     LOG_INFO("Registration successful\n");
     max_registration_retry = 0; // if = 0 --> registration ok!
     return;
@@ -49,11 +56,10 @@ void client_chunk_handler(coap_message_t *response){//
  extern coap_resource_t res_SolarPw;
  extern coap_resource_t res_SolarPw_status;
  
- static struct etimer e_timer, sleep_timer, send_timer;
+ static struct etimer e_timer, sleep_timer;
  
  PROCESS(SolarPw_server, "SolarPw Sensor CoAP Server");
- PROCESS(solar_sensor_process, "Solar Sensor Process");
- AUTOSTART_PROCESSES(&SolarPw_server, &solar_sensor_process);
+ AUTOSTART_PROCESSES(&SolarPw_server);
  
  int status = 1;
  
@@ -139,50 +145,10 @@ void client_chunk_handler(coap_message_t *response){//
    PROCESS_END();
  }
 
-PROCESS_THREAD(solar_sensor_process, ev, data) {
-    static coap_endpoint_t actuator_endpoint;
-    static coap_message_t request[1];
-    PROCESS_BEGIN();
-
-    LOG_INFO("Avvio del sensore solare...\n");
-
-    // Imposta un timer per inviare i dati ogni 15 minuti
-    etimer_set(&send_timer, CLOCK_SECOND * 900);
-    coap 
-    while (1) {
-        PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&send_timer));
-
-        // Prepara i dati da inviare
-        float solar_power = 5.0;  // Simulazione della potenza solare
-        char payload[128];
-        snprintf(payload, sizeof(payload), "{\"tipo\": 2, \"solar_power\": %.2f}", solar_power);
-
-        // Configura l'endpoint dell'attuatore
-        coap_endpoint_parse(ACTUATOR_EP, strlen(ACTUATOR_EP), &actuator_endpoint);
-
-        // Prepara il messaggio CoAP
-        coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
-        coap_set_header_uri_path(request, "gestione");
-        coap_set_payload(request, (uint8_t *)payload, strlen(payload));
-
-        LOG_INFO("Invio dati al dispositivo: %s\n", payload);
-
-        // Invia la richiesta
-        COAP_BLOCKING_REQUEST(&actuator_endpoint, request, NULL);
-
-        LOG_INFO("Dati inviati con successo.\n");
-
-        // Reset del timer
-        etimer_reset(&send_timer);
-    }
-
-    PROCESS_END();
-}
 
 
 /* Dichiarazione della risorsa per il consumo energetico */
-static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer,
-                            uint16_t preferred_size, int32_t *offset);
+
 
 RESOURCE(res_solar,
          "title=\"Produzione Energeticq\";rt=\"Text\"",

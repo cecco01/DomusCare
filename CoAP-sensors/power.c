@@ -49,6 +49,8 @@ void client_chunk_handler(coap_message_t *response){//
  extern coap_resource_t res_power;
  extern coap_resource_t res_power_status;
  extern coap_resource_t res_consumo;
+ extern void res_power_get_handler(coap_message_t *request, coap_message_t *response,
+                            uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
  
  static struct etimer e_timer, sleep_timer;
  
@@ -140,14 +142,12 @@ void client_chunk_handler(coap_message_t *response){//
  }
 
 /* Risorsa per il consumo energetico */
-static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer,
-                            uint16_t preferred_size, int32_t *offset);
+
 
 RESOURCE(res_consumo,
          "title=\"Consumo Energetico\";rt=\"Text\"",
-         res_get_handler,
+         res_power_get_handler,
          NULL,
          NULL,
          NULL);
-
 

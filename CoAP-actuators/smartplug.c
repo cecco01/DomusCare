@@ -12,8 +12,8 @@
 #define INTERVALLO_PREDIZIONE 900  // Intervallo di predizione in secondi (15 minuti)
 
 const char *server_ep = "coap://[fd00::1]:5683";  // Esempio di endpoint
-static char *SOLAR_EP;  // Endpoint per la produzione solare
-static char *POWER_EP;  // Endpoint per il consumo energetico
+static char SOLAR_EP[64];  // Buffer per l'indirizzo IP del sensore solare
+static char POWER_EP[64];  // Buffer per l'indirizzo IP del sensore di consumo
 static struct etimer efficient_timer;  // Timer per avviare il dispositivo nel momento più efficiente
 static struct etimer clock_timer;  // Timer per aggiornare l'orologio ogni minuto
 static struct etimer task_timer;  // Timer per disattivare il dispositivo dopo la durata del task
@@ -201,8 +201,8 @@ void coap_message_handler(coap_message_t *request, coap_message_t *response, uin
 
         if (tipo_messaggio == 0) {
             // Parsing per ora, minuti, giorno e mese
-            sscanf(payload_str, "{\"tipo\": %d, \"ora\": %d, \"minuti\": %d, \"giorno\": %d, \"mese\": %d, \"solar_ip\": \"%s\", \"power_ip\": \"%s\"}",
-                   &tipo_messaggio, &ore, &minuti, &giorno, &mese, &SOLAR_EP, &POWER_EP);
+            sscanf(payload_str, "{\"tipo\": %d, \"ora\": %d, \"minuti\": %d, \"giorno\": %d, \"mese\": %d, \"solar_ip\": \"%63[^\"]\", \"power_ip\": \"%63[^\"]\"}",
+                   &tipo_messaggio, &ore, &minuti, &giorno, &mese, SOLAR_EP, POWER_EP);
             printf("Tipo: %d, Ora: %02d, Minuti: %02d, Giorno: %02d, Mese: %02d, Solar IP: %s, Power IP: %s\n",
                    tipo_messaggio, ore, minuti, giorno, mese, SOLAR_EP, POWER_EP);
 
@@ -398,7 +398,7 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
 
     // Crea il payload JSON per la registrazione
     char payload[256];
-    snprintf(payload, sizeof(payload), "{\"type\": \"%s\" , \"status\": %d, \"consumption\": %.2f}", nome_dispositivo, stato_dispositivo, consumo_dispositivo);
+    snprintf(payload, sizeof(payload), "{\"type\": \"actuator\" ,\"nome\": %s , \"status\": %d, \"consumption\": %.2f}", nome_dispositivo, stato_dispositivo, consumo_dispositivo);
 
     // Imposta il payload nella richiesta
     coap_set_payload(request, (uint8_t *)payload, strlen(payload));

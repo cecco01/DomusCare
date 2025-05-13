@@ -13,6 +13,20 @@
             "database": "iot",
             "username": "root",
             "askForPassword": true
+        },
+        {
+            "mysqlOptions": {
+                "authProtocol": "default",
+                "enableSsl": "Disabled"
+            },
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 3306,
+            "driver": "MySQL",
+            "name": "iot",
+            "database": "iot",
+            "username": "root",
+            "password": "root"
         }
     ],
     "files.associations": {

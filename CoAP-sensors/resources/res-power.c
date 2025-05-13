@@ -14,10 +14,11 @@
 #define MEAN 169.970005 //VALORI ANCORA DA STABILIRE
 #define STDDEV 14.283898 //VALORI ANCORA DA STABILIRE
 
-static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
+void res_power_get_handler(coap_message_t *request, coap_message_t *response,
+                                  uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 static void res_event_handler(void);
 
-EVENT_RESOURCE(res_power,"title=\"Observable resource\";power",res_get_handler,NULL,NULL,NULL,res_event_handler);
+EVENT_RESOURCE(res_power,"title=\"Observable resource\";power",res_power_get_handler,NULL,NULL,NULL,res_event_handler);
 
 static double current_power = 0;//memorizza l'ultimo valore generato
 
@@ -29,10 +30,11 @@ static void res_event_handler(void){
 }
 
 //quando un client CoAP richiede la risorsa, viene generato un payload JSON con il valore corrente
-static void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset){
-  coap_set_header_content_format(response, APPLICATION_JSON);
-  int payload_len = snprintf((char *)buffer, preferred_size, "{\"power\":%.2f}", current_power);//cambia campo tipo del JSON
-  coap_set_payload(response, buffer, payload_len);
+ void res_power_get_handler(coap_message_t *request, coap_message_t *response,
+                                  uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
+    coap_set_header_content_format(response, APPLICATION_JSON);
+    int payload_len = snprintf((char *)buffer, preferred_size, "{\"power\":%.2f}", current_power);
+    coap_set_payload(response, buffer, payload_len);
 
-  LOG_INFO("Payload: %s\n", buffer);
+    LOG_INFO("Payload: %s\n", buffer);
 }
