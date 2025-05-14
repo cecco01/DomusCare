@@ -168,7 +168,7 @@ void avvia_dispositivo() {
 
 // Funzione per registrare il dispositivo con il server
 void registra_dispositivo(  const char *tipo_dispositivo) {
-    process_start(&registra_dispositivo_process);
+    process_start(&registra_dispositivo_process,NULL);
     
 }
 
@@ -306,11 +306,10 @@ PROCESS_THREAD(richiedi_dati_sensore_process, ev, data) {
    
     dato_ricevuto = (float *)data;
 
-    coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), server_endpoint);
+    coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &server_endpoint);
     coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
-    coap_set_header_uri_path(request, server_endpoint);
+    coap_set_header_uri_path(request, "register/");
 
-    printf("Richiesta dati al sensore: %s\n", server_endpoint);
 
     COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
 
@@ -405,7 +404,7 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
 
 
     // Configura l'endpoint del server
-    coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), server_endpoint);
+    coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &server_endpoint);
     coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
     coap_set_header_uri_path(request, "register/");
     while (!is_registered) {
@@ -413,7 +412,7 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
         //avvia il timer di 30 secondi
         
         
-        printf("invio al indirizzo ip del server %s: {\"t\": \"actuator\", \"n\": %s , \"s\": %d, \"c\": %.2f, \"d\": %d } \n: ", server_url, nome_dispositivo, stato_dispositivo, consumo_dispositivo, durata);
+        printf("invio al indirizzo ip del server : {\"t\": \"actuator\", \"n\": %s , \"s\": %d, \"c\": %.2f, \"d\": %d } \n: ", nome_dispositivo, stato_dispositivo, consumo_dispositivo, durata);
         
         snprintf(payload, sizeof(payload), "{\"t\": \"actuator\", \"n\": %s , \"s\": %d, \"c\": %.2f, \"d\": %d }", nome_dispositivo, stato_dispositivo, consumo_dispositivo, durata);
         printf("Invio segnale al server: %s\n", payload);
