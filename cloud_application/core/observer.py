@@ -47,7 +47,7 @@ class ObserveSensor:
 
 class ObserveActuator:
 
-    def __init__(self,source_address, resource):
+    def __init__(self, source_address, resource):
         self.address = source_address
         self.resource = resource
         self.database = Database()
@@ -57,22 +57,19 @@ class ObserveActuator:
         self.client = HelperClient(self.address)
         self.client.observe(self.resource, self.observer)
     
-    def observer(self, response):#da rivedere, pensando allo scopo che vogliamo dare alla nsotra applicazione != ML
-
+    def observer(self, response):
         if not response.payload:
             print("Empty response payload")
             return
         
-        data = json.loads(response.payload)
-        
         try:
-            if self.resource == "boh": #da rivedere i nomi delle risorse
-                print("\n🔄🔄🔄🔄 BOH 🔄🔄🔄🔄 : " + str(data["value"]))
-                label = ""
-
-                if label != "":
-                    Record.push_failure(label)
+            data = json.loads(response.payload)
+            # Sostituisci "smartplug" con il nome reale della risorsa dell'attuatore
+            if self.resource == "smartplug":
+                print("\n🔌🔌🔌🔌 SMARTPLUG 🔌🔌🔌🔌 : " + str(data["status"]))
+                # Puoi aggiungere qui eventuali azioni su Record o database
+                # Esempio: Record.set_smartplug_status(data["status"])
             else:
                 print("Unknown resource:", self.resource)
-        except KeyError as e:
-            print("KeyError:", e)
+        except (KeyError, json.JSONDecodeError) as e:
+            print("Observer error:", e)
