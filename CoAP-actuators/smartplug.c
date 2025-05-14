@@ -403,38 +403,52 @@ PROCESS_THREAD(avvia_dispositivo_process, ev, data) {
     PROCESS_END();
 }
 
-PROCESS_THREAD(registra_dispositivo_process, ev, data) {
-    PROCESS_BEGIN();
 
-    static coap_endpoint_t server_endpoint;
-    static coap_message_t request[1];
+static int max_registration_retry = 3;
+static struct etimer e_timer, sleep_timer;
+int status = 1;
 
+PROCESS(smartplug_server, "SmartPlug CoAP Server");
+AUTOSTART_PROCESSES(&smartplug_server);
 
-    // Configura l'endpoint del server
-    coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &server_endpoint);
+PROCESS_THREAD(smartplug_server, ev, data) {
+  static coap_endpoint_t main_server_ep;
+  static coap_message_t request[1];
+
+  PROCESS_BEGIN();
+
+  LOG_INFO("Starting SmartPlug Server\n");
+  // Attivo la risorsa CoAP 
+   coap_activate_resource(&res_smartplug, "smartplug");
+
+  while (max_registration_retry != 0) {
+    /* -------------- REGISTRAZIONE --------------*/
+    coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &main_server_ep);
     coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
     coap_set_header_uri_path(request, "register/");
-    while (!is_registered) {
-        char payload[256];
-        //avvia il timer di 30 secondi
-        
-        
-        printf("invio al indirizzo ip del server : {\"t\": \"actuator\", \"n\": %s , \"s\": %d, \"c\": %.2f, \"d\": %d } \n: ", nome_dispositivo, stato_dispositivo, consumo_dispositivo, durata);
-        
-        snprintf(payload, sizeof(payload), "{\"t\": \"actuator\", \"n\": \"%s\", \"s\": %d, \"c\": %.2f, \"d\": %d }", nome_dispositivo, stato_dispositivo, consumo_dispositivo, durata);
-        printf("Invio segnale al server: %s\n", payload);
-        printf("Dimensione del payload: %zu\n", strlen(payload));
-        // Imposta il payload nella richiesta
-        coap_set_payload(request, (uint8_t *)payload, strlen(payload));
-        // Invia la richiesta al server
-        COAP_BLOCKING_REQUEST(&server_endpoint, request, client_registration_handler);
-        if(!is_registered) {
-            etimer_set(&sleep_timer, 30 * CLOCK_SECOND);
-            PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&sleep_timer));
-        } 
-    }
-    // Crea il payload JSON per la registrazione
-    printf("Registrazione completata con successo.\n");
+    const char msg[] = "{\"t\": \"actuator\"}";
+    coap_set_payload(request, (uint8_t *)msg, sizeof(msg) - 1);
 
-    PROCESS_END();
+    leds_single_on(LEDS_YELLOW);
+
+    COAP_BLOCKING_REQUEST(&main_server_ep, request, client_registration_handler);
+
+    /* -------------- END REGISTRAZIONE --------------*/
+    if (max_registration_retry == -1) {
+        etimer_set(&sleep_timer, 30 * CLOCK_SECOND);
+      PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&sleep_timer));
+      max_registration_retry = 3;
+    }
+  }
+
+  LOG_INFO("REGISTRATION SUCCESS\n");
+  leds_single_off(LEDS_YELLOW);
+
+
+//  while (1) {
+//    PROCESS_WAIT_EVENT();
+    // Gestione di altri eventi... ci devo ancora pensare
+//  }
+
+  PROCESS_END();
 }
