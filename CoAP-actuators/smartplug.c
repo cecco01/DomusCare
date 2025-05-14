@@ -409,7 +409,7 @@ static struct etimer e_timer, sleep_timer;
 int status = 1;
 
 PROCESS(smartplug_server, "SmartPlug CoAP Server");
-AUTOSTART_PROCESSES(&smartplug_server);
+//AUTOSTART_PROCESSES(&smartplug_server); ce ne può essere uno solo
 
 PROCESS_THREAD(smartplug_server, ev, data) {
   static coap_endpoint_t main_server_ep;
