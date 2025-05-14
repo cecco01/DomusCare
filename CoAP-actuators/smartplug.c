@@ -404,41 +404,51 @@ PROCESS_THREAD(avvia_dispositivo_process, ev, data) {
 }
 
 
-PROCESS_THREAD(registra_dispositivo_process, ev, data) {
-    PROCESS_BEGIN();
+static int max_registration_retry = 3;
+static struct etimer e_timer, sleep_timer;
+int status = 1;
 
-    static coap_endpoint_t server_endpoint;
-    static coap_message_t request[1];
+PROCESS(smartplug_server, "SmartPlug CoAP Server");
+AUTOSTART_PROCESSES(&smartplug_server);
 
-    int max_registration_retry = 3;
+PROCESS_THREAD(smartplug_server, ev, data) {
+  static coap_endpoint_t main_server_ep;
+  static coap_message_t request[1];
 
-    while (max_registration_retry != 0 && !is_registered) {
-        // Configura l'endpoint del server
-        coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &server_endpoint);
-        coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
-        coap_set_header_uri_path(request, "register/");
+  PROCESS_BEGIN();
 
-        const char msg[] = "{\"t\": \"actuator\"}";
-        coap_set_payload(request, (uint8_t *)msg, sizeof(msg) - 1);
+  LOG_INFO("Starting SmartPlug Server\n");
+  // Attivo la risorsa CoAP 
+   coap_activate_resource(&res_smartplug, "smartplug");
 
-        printf("Invio richiesta di registrazione: %s\n", msg);
+  while (max_registration_retry != 0) {
+    /* -------------- REGISTRAZIONE --------------*/
+    coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &main_server_ep);
+    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
+    coap_set_header_uri_path(request, "register/");
+    const char msg[] = "{\"t\": \"actuator\"}";
+    coap_set_payload(request, (uint8_t *)msg, sizeof(msg) - 1);
 
-        COAP_BLOCKING_REQUEST(&server_endpoint, request, client_registration_handler);
+    leds_single_on(LEDS_YELLOW);
 
-        if(!is_registered) {
-            max_registration_retry--;
-            if(max_registration_retry == 0) {
-                printf("Registrazione fallita dopo 3 tentativi. Attendo 30 secondi prima di riprovare.\n");
-                etimer_set(&sleep_timer, 30 * CLOCK_SECOND);
-                PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&sleep_timer));
-                max_registration_retry = 3;
-            }
-        }
+    COAP_BLOCKING_REQUEST(&main_server_ep, request, client_registration_handler);
+
+    /* -------------- END REGISTRAZIONE --------------*/
+    if (max_registration_retry == -1) {
+        etimer_set(&sleep_timer, 30 * CLOCK_SECOND);
+      PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&sleep_timer));
+      max_registration_retry = 3;
     }
+  }
 
-    if(is_registered) {
-        printf("Registrazione completata con successo.\n");
-    }
+  LOG_INFO("REGISTRATION SUCCESS\n");
+  leds_single_off(LEDS_YELLOW);
 
-    PROCESS_END();
+
+//  while (1) {
+//    PROCESS_WAIT_EVENT();
+    // Gestione di altri eventi... ci devo ancora pensare
+//  }
+
+  PROCESS_END();
 }
