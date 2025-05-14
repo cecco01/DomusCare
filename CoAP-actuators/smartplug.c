@@ -74,14 +74,25 @@ void client_chunk_handler(coap_message_t *response) {
 
 void client_registration_handler(coap_message_t *response) {
     const uint8_t *payload = NULL;
-    size_t len = coap_get_payload(response, &payload);
-    if (len > 0) {
-        is_registered = true;
-        printf("Registrazione riuscita: %.*s\n", (int)len, (const char *)payload);
-    } else {
-        is_registered = false;
-        number_of_retries++;
-        printf("Registrazione non riuscita. Tentativo %d \n", number_of_retries);
+    if (response == NULL){
+        LOG_ERR("Request timed out\n");
+      }
+      else{
+        const uint8_t *payload = NULL;
+        int len = coap_get_payload(response, &payload);
+        if (len > 0 && payload != NULL) {
+            LOG_INFO("Payload: %.*s\n", len, (char *)payload);
+        } else {
+            LOG_ERR("Payload is NULL or empty\n");
+        }
+        if (len > 0) {
+            is_registered = true;
+            printf("Registrazione riuscita: %.*s\n", (int)len, (const char *)payload);
+        } else {
+            is_registered = false;
+            number_of_retries++;
+            printf("Registrazione non riuscita. Tentativo %d \n", number_of_retries);
+        }
     }
 }
 
