@@ -42,7 +42,9 @@ build/cooja/obj/res-power.o: resources/res-power.c \
  /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-observe-client.h \
  resources/utils/randomize.h \
  /home/iot_ubuntu_intel/contiki-ng/os/sys/log.h \
- /home/iot_ubuntu_intel/contiki-ng/os/sys/log-conf.h
+ /home/iot_ubuntu_intel/contiki-ng/os/sys/log-conf.h \
+ /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-blocking-api.h \
+ /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-request-state.h
 /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/module-macros.h:
 /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-engine.h:
 /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap.h:
@@ -87,3 +89,5 @@ project-conf.h:
 resources/utils/randomize.h:
 /home/iot_ubuntu_intel/contiki-ng/os/sys/log.h:
 /home/iot_ubuntu_intel/contiki-ng/os/sys/log-conf.h:
+/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-blocking-api.h:
+/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-request-state.h:
