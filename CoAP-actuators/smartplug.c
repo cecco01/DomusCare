@@ -462,10 +462,7 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
   
 
 
-//  while (1) {
-//    PROCESS_WAIT_EVENT();
-    // Gestione di altri eventi... ci devo ancora pensare
-//  }
+
 
   PROCESS_END();
 }

@@ -213,11 +213,11 @@ class Registration(Resource):
 
             # Invia il messaggio CoAP
             print(f"Invio messaggio CoAP a {ip_address} con payload: {payload}")
-            response = client.post("gestione", json.dumps(payload))
+            response = client.post("Smartplug resource", json.dumps(payload))
             if response:
                 print(f"Messaggio inviato al dispositivo Smart Plug: {payload}")
             else:
-                print("Errore durante l'invio del messaggio al dispositivo Smart Plug.")
+                print("Errore durante l'sminvio del messaggio al dispositivo Smart Plug.")
 
         except Exception as e:
             print(f"Errore durante l'invio del messaggio CoAP: {e}")

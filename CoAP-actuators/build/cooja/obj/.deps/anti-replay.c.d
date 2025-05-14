@@ -1,5 +1,7 @@
-build/cooja/obj/smartplug2.o: smartplug2.c \
+build/cooja/obj/anti-replay.o: \
+ /home/iot_ubuntu_intel/contiki-ng/os/net/mac/csma/anti-replay.c \
  /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/module-macros.h \
+ /home/iot_ubuntu_intel/contiki-ng/os/net/mac/csma/anti-replay.h \
  /home/iot_ubuntu_intel/contiki-ng/os/contiki.h \
  /home/iot_ubuntu_intel/contiki-ng/arch/platform/cooja/./contiki-conf.h \
  project-conf.h \
@@ -23,31 +25,18 @@ build/cooja/obj/smartplug2.o: smartplug2.c \
  /home/iot_ubuntu_intel/contiki-ng/arch/platform/cooja/./sys/cooja_mt.h \
  /home/iot_ubuntu_intel/contiki-ng/os/sys/pt.h \
  /home/iot_ubuntu_intel/contiki-ng/os/sys/clock.h \
- /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-engine.h \
- /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap.h \
- /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-constants.h \
- /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-conf.h \
- /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-transport.h \
- /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-endpoint.h \
+ /home/iot_ubuntu_intel/contiki-ng/os/net/packetbuf.h \
+ /home/iot_ubuntu_intel/contiki-ng/os/net/linkaddr.h \
+ /home/iot_ubuntu_intel/contiki-ng/os/net/mac/llsec802154.h \
+ /home/iot_ubuntu_intel/contiki-ng/os/net/mac/framer/frame802154.h \
  /home/iot_ubuntu_intel/contiki-ng/os/net/ipv6/uip.h \
  /home/iot_ubuntu_intel/contiki-ng/os/net/ipv6/uipopt.h \
  /home/iot_ubuntu_intel/contiki-ng/os/net/ipv6/uipbuf.h \
- /home/iot_ubuntu_intel/contiki-ng/os/net/linkaddr.h \
  /home/iot_ubuntu_intel/contiki-ng/os/net/ipv6/tcpip.h \
- /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-timer.h \
- /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-transactions.h \
- /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-engine.h \
- /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-observe.h \
- /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-separate.h \
- /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-observe-client.h \
- /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-blocking-api.h \
- /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-request-state.h \
- /home/iot_ubuntu_intel/contiki-ng/os/sys/log.h \
- /home/iot_ubuntu_intel/contiki-ng/os/sys/log-conf.h \
- /home/iot_ubuntu_intel/contiki-ng/os/dev/leds.h \
- /home/iot_ubuntu_intel/contiki-ng/os/dev/gpio-hal.h \
- /home/iot_ubuntu_intel/contiki-ng/arch/platform/cooja/./dev/gpio-hal-arch.h
+ /home/iot_ubuntu_intel/contiki-ng/os/net/mac/csma/csma-security.h \
+ /home/iot_ubuntu_intel/contiki-ng/os/net/mac/tsch/tsch-conf.h
 /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/module-macros.h:
+/home/iot_ubuntu_intel/contiki-ng/os/net/mac/csma/anti-replay.h:
 /home/iot_ubuntu_intel/contiki-ng/os/contiki.h:
 /home/iot_ubuntu_intel/contiki-ng/arch/platform/cooja/./contiki-conf.h:
 project-conf.h:
@@ -71,27 +60,13 @@ project-conf.h:
 /home/iot_ubuntu_intel/contiki-ng/arch/platform/cooja/./sys/cooja_mt.h:
 /home/iot_ubuntu_intel/contiki-ng/os/sys/pt.h:
 /home/iot_ubuntu_intel/contiki-ng/os/sys/clock.h:
-/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-engine.h:
-/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap.h:
-/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-constants.h:
-/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-conf.h:
-/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-transport.h:
-/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-endpoint.h:
+/home/iot_ubuntu_intel/contiki-ng/os/net/packetbuf.h:
+/home/iot_ubuntu_intel/contiki-ng/os/net/linkaddr.h:
+/home/iot_ubuntu_intel/contiki-ng/os/net/mac/llsec802154.h:
+/home/iot_ubuntu_intel/contiki-ng/os/net/mac/framer/frame802154.h:
 /home/iot_ubuntu_intel/contiki-ng/os/net/ipv6/uip.h:
 /home/iot_ubuntu_intel/contiki-ng/os/net/ipv6/uipopt.h:
 /home/iot_ubuntu_intel/contiki-ng/os/net/ipv6/uipbuf.h:
-/home/iot_ubuntu_intel/contiki-ng/os/net/linkaddr.h:
 /home/iot_ubuntu_intel/contiki-ng/os/net/ipv6/tcpip.h:
-/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-timer.h:
-/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-transactions.h:
-/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-engine.h:
-/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-observe.h:
-/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-separate.h:
-/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-observe-client.h:
-/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-blocking-api.h:
-/home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-request-state.h:
-/home/iot_ubuntu_intel/contiki-ng/os/sys/log.h:
-/home/iot_ubuntu_intel/contiki-ng/os/sys/log-conf.h:
-/home/iot_ubuntu_intel/contiki-ng/os/dev/leds.h:
-/home/iot_ubuntu_intel/contiki-ng/os/dev/gpio-hal.h:
-/home/iot_ubuntu_intel/contiki-ng/arch/platform/cooja/./dev/gpio-hal-arch.h:
+/home/iot_ubuntu_intel/contiki-ng/os/net/mac/csma/csma-security.h:
+/home/iot_ubuntu_intel/contiki-ng/os/net/mac/tsch/tsch-conf.h:
