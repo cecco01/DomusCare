@@ -63,9 +63,9 @@ DELIMITER ;
 
 -- Creazione del trigger per aggiornare il consumo totale
 DELIMITER $$
-Drop TRIGGER IF EXISTS aggiorna_consumo_dispositivi;
+DROP TRIGGER IF EXISTS aggiorna_consumo_dispositivi;
 CREATE TRIGGER aggiorna_consumo_dispositivi
-AFTER INSERT ON data
+BEFORE INSERT ON data
 FOR EACH ROW
 BEGIN
     DECLARE consumo_totale FLOAT;
@@ -74,8 +74,7 @@ BEGIN
     WHERE stato = 1;
 
     IF consumo_totale IS NOT NULL THEN
-        SET NEW.power = NEW.power + consumo_totale;
+        SET NEW.power = IFNULL(NEW.power, 0) + consumo_totale;
     END IF;
 END$$
-
 DELIMITER ;
