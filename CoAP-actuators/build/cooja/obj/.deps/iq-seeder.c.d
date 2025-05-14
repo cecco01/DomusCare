@@ -5,6 +5,7 @@ build/cooja/obj/iq-seeder.o: \
  /home/iot_ubuntu_intel/contiki-ng/os/lib/csprng.h \
  /home/iot_ubuntu_intel/contiki-ng/os/contiki.h \
  /home/iot_ubuntu_intel/contiki-ng/arch/platform/cooja/./contiki-conf.h \
+ project-conf.h \
  /home/iot_ubuntu_intel/contiki-ng/os/contiki-default-conf.h \
  /home/iot_ubuntu_intel/contiki-ng/os/sys/process.h \
  /home/iot_ubuntu_intel/contiki-ng/os/sys/pt.h \
@@ -36,6 +37,7 @@ build/cooja/obj/iq-seeder.o: \
 /home/iot_ubuntu_intel/contiki-ng/os/lib/csprng.h:
 /home/iot_ubuntu_intel/contiki-ng/os/contiki.h:
 /home/iot_ubuntu_intel/contiki-ng/arch/platform/cooja/./contiki-conf.h:
+project-conf.h:
 /home/iot_ubuntu_intel/contiki-ng/os/contiki-default-conf.h:
 /home/iot_ubuntu_intel/contiki-ng/os/sys/process.h:
 /home/iot_ubuntu_intel/contiki-ng/os/sys/pt.h:

@@ -11,7 +11,7 @@
 #define MAX_FEATURES 5     // Numero massimo di feature per i modelli (senza il timestamp anno)
 #define INTERVALLO_PREDIZIONE 900  // Intervallo di predizione in secondi (15 minuti)
 
-const char *server_ep = "coap://[fd00::1]:5683";  // Esempio di endpoint
+#define SERVER_EP "coap://[fd00::1]:5683"  // Esempio di endpoint
 
 static char SOLAR_EP[64];  // Buffer per l'indirizzo IP del sensore solare
 static char POWER_EP[64];  // Buffer per l'indirizzo IP del sensore di consumo
@@ -301,17 +301,17 @@ PROCESS_THREAD(richiedi_dati_sensore_process, ev, data) {
     static coap_endpoint_t server_endpoint;
     static coap_message_t request[1];
     static float *dato_ricevuto;
-    const char *server_ep;
+    
 
     // Recupera i dati passati al processo
-    server_ep = (const char *)data;
+   
     dato_ricevuto = (float *)data;
 
-    coap_endpoint_parse(server_ep, strlen(server_ep), &server_endpoint);
+    coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), SERVER_EP);
     coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
-    coap_set_header_uri_path(request, server_ep);
+    coap_set_header_uri_path(request, SERVER_EP);
 
-    printf("Richiesta dati al sensore: %s\n", server_ep);
+    printf("Richiesta dati al sensore: %s\n", SERVER_EP);
 
     COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
 
@@ -406,7 +406,7 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
     const char *server_url = (const char *)data;
 
     // Configura l'endpoint del server
-    coap_endpoint_parse(server_url, strlen(server_url), &server_endpoint);
+    coap_endpoint_parse(server_url, strlen(server_url), SERVER_EP);
     coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
     coap_set_header_uri_path(request, "register/");
     while (!is_registered) {
