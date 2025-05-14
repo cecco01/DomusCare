@@ -17,13 +17,12 @@
 
 void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
-EVENT_RESOURCE(res_power,
-               "title=\"Power resource\";rt=\"power\"",
-               res_get_handler,
-               NULL,
-               NULL,
-               NULL,
-               NULL);
+RESOURCE(res_power,
+         "title=\"Power resource\";rt=\"power\"",
+         res_get_handler,
+         NULL,
+         NULL,
+         NULL);
 
 PROCESS(post_to_control_process, "Post to Control Process");
 
