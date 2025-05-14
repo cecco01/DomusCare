@@ -36,7 +36,7 @@ static int durata_task = 60 * 60;  // Durata del task in secondi
 static float features_consumo[MAX_FEATURES];  // Array delle feature per il modello di consumo
 static float features_produzione[MAX_FEATURES];  // Array delle feature per il modello di produzione
 // Risorsa CoAP per lo stato del dispositivo
-static int stato_dispositivo = 0;  // Stato del dispositivo: 0=Spento, 1=Attivo, 2=Pronto
+int stato_dispositivo = 0;  // Stato del dispositivo: 0=Spento, 1=Attivo, 2=Pronto
 static float consumo_dispositivo = 1.5;  // Consumo energetico corrente
 static int numero_ripetizioni = 0;  // Dichiarazione globale
 static int orologio_attivo = 0;  // Flag per indicare se l'orologio è attivo
