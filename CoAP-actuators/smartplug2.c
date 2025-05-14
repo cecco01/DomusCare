@@ -42,6 +42,12 @@ void stato_handler(coap_message_t *request, coap_message_t *response, uint8_t *b
 }
 
 void client_registration_handler(coap_message_t *response) {
+    if (response == NULL) {
+        printf("Request timed out\n");
+        is_registered = false;
+        return;
+    }
+
     const uint8_t *payload = NULL;
     size_t len = coap_get_payload(response, &payload);
     if (len > 0) {
@@ -92,7 +98,7 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
         coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
         coap_set_header_uri_path(request, "register/");
         const char msg[] = "{\"t\": \"solar\"}";
-        coap_set_payload(request, (uint8_t *)msg, sizeof(msg) - 1);
+        coap_set_payload(request, (uint8_t *)msg, strlen(msg));
 
         COAP_BLOCKING_REQUEST(&main_server_ep, request, client_registration_handler);
 
