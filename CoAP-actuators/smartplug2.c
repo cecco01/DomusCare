@@ -108,6 +108,7 @@ EVENT_RESOURCE(res_smartplug,
                NULL,
                res_post_handler,
                NULL,
+               NULL,
                NULL);
 
 PROCESS_THREAD(smartplug_process, ev, data) {

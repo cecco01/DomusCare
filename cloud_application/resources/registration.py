@@ -131,11 +131,22 @@ class Registration(Resource):
         print(f"Registrato il sensore di tipo {sensor_type} con indirizzo IP {ip_address}.")
         # Se il sensore è un actuator, aggiungilo anche nella tabella dispositivi
         if sensor_type == "actuator":
+
             query = """
-            INSERT INTO devices (name, status, timeout)
+            INSERT INTO devices (name, stato, consumo_kwh,durata)
             VALUES (%s, %s, %s)
             """
-            cursor.execute(query, (str(ip_address), , 0))
+            # Estrai i dati dal payload
+            name = payload.get("n")
+            stato = payload.get("s")
+            consumo_kwh = payload.get("c")
+            durata = payload.get("d")
+            # Verifica se i dati sono presenti e validi
+            if not name or not stato or not consumo_kwh or not durata:
+                raise ValueError("Dati incompleti nel payload per l'attuatore.")
+            # Esegui l'inserimento nella tabella dispositivi
+            cursor.execute(query, (str(name), str(stato), float(consumo_kwh), int(durata)))
+            
             self.connection.commit()
             print(f"Registrato il dispositivo di tipo {sensor_type} con indirizzo IP {ip_address}.")
 
@@ -185,13 +196,17 @@ class Registration(Resource):
             power_ip = ""
 
             # Assegna gli indirizzi IP in base al tipo
-            for sensor_type, sensor_ip in sensors:
-                if sensor_type == "solar":
-                    solar_ip = f"coap://[{sensor_ip}]:5683"
-                    print(f"Solar IP: {solar_ip}")
-                elif sensor_type == "power":
-                    power_ip = f"coap://[{sensor_ip}]:5683"
-                    print(f"Power IP: {power_ip}")
+            for sensor_type, ip_port in sensors:
+                if isinstance(ip_port, tuple) and len(ip_port) == 2:
+                    sensor_ip, sensor_port = ip_port
+                    if sensor_type == "solar":
+                        solar_ip = f"coap://[{sensor_ip}]:{sensor_port}"
+                        print(f"Solar IP: {solar_ip}")
+                    elif sensor_type == "power":
+                        power_ip = f"coap://[{sensor_ip}]:{sensor_port}"
+                        print(f"Power IP: {power_ip}")
+                else:
+                    print(f"Formato non valido per ip_port: {ip_port}")
 
             # Log degli indirizzi IP (anche se vuoti)
             print(f"INVIO DEGLI INDIRIZII : Indirizzo IP Solar: {solar_ip}, Indirizzo IP Power: {power_ip}")
@@ -221,5 +236,5 @@ class Registration(Resource):
         finally:
             if client:
                 client.stop()
-    
+
 
