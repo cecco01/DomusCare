@@ -31,6 +31,7 @@
     ],
     "files.associations": {
         "compare": "c",
-        "cstdint": "c"
+        "cstdint": "c",
+        "smart_grid_model_production.h": "c"
     }
 }

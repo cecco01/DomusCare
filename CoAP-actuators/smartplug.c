@@ -7,10 +7,11 @@
 #include "coap-blocking-api.h"
 #include "../ML/smart_grid_model_consumption.h"
 #include "../ML/smart_grid_model_production.h"
-
+#include "sys/log.h"
 #define MAX_FEATURES 5     // Numero massimo di feature per i modelli (senza il timestamp anno)
 #define INTERVALLO_PREDIZIONE 900  // Intervallo di predizione in secondi (15 minuti)
-
+#define LOG_MODULE "App"
+#define LOG_LEVEL LOG_LEVEL_APP
 #define SERVER_EP "coap://[fd00::1]:5683"  // Esempio di endpoint
 
 static char SOLAR_EP[64];  // Buffer per l'indirizzo IP del sensore solare
