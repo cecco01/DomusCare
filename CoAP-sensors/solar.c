@@ -26,6 +26,13 @@
 static int max_registration_retry = MAX_REGISTRATION_RETRY;
 extern void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
+RESOURCE(res_solar,
+  "title=\"Produzione Energeticq\";rt=\"Text\"",
+  res_get_handler,
+  NULL,
+  NULL,
+  NULL);
+
 void client_chunk_handler(coap_message_t *response){//
   if (response == NULL){
     LOG_ERR("Request timed out\n");
@@ -53,7 +60,6 @@ void client_chunk_handler(coap_message_t *response){//
  * Resources to be activated need to be imported through the extern keyword.
  * The build system automatically compiles the resources in the corresponding sub-directory.
  */
- extern coap_resource_t res_SolarPw;
  
  static struct etimer e_timer, sleep_timer;
  
@@ -76,7 +82,7 @@ void client_chunk_handler(coap_message_t *response){//
  #endif
  
    LOG_INFO("Starting SolarPw Server\n");
-   coap_activate_resource(&res_SolarPw, "SolarPw");
+   coap_activate_resource(&res_solar, "SolarPw");
  
    while (max_registration_retry != 0){
      /* -------------- REGISTRATION --------------*/
@@ -113,8 +119,8 @@ void client_chunk_handler(coap_message_t *response){//
  
      if (ev == PROCESS_EVENT_TIMER && data == &e_timer){
        if (status == 1){
-         res_SolarPw.trigger();
-         LOG_INFO("SolarPw event triggered\n");
+         res_solar.trigger();
+         LOG_INFO("res_solar event triggered\n");
        }
        etimer_reset(&e_timer);
  
@@ -147,12 +153,5 @@ void client_chunk_handler(coap_message_t *response){//
 
 /* Dichiarazione della risorsa per il consumo energetico */
 
-
-RESOURCE(res_solar,
-         "title=\"Produzione Energeticq\";rt=\"Text\"",
-         res_get_handler,
-         NULL,
-         NULL,
-         NULL);
 
 /* Implementazione del gestore GET per la risorsa */
