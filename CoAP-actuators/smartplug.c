@@ -403,38 +403,42 @@ PROCESS_THREAD(avvia_dispositivo_process, ev, data) {
     PROCESS_END();
 }
 
+
 PROCESS_THREAD(registra_dispositivo_process, ev, data) {
     PROCESS_BEGIN();
 
     static coap_endpoint_t server_endpoint;
     static coap_message_t request[1];
 
+    int max_registration_retry = 3;
 
-    // Configura l'endpoint del server
-    coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &server_endpoint);
-    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
-    coap_set_header_uri_path(request, "register/");
-    while (!is_registered) {
-        char payload[256];
-        //avvia il timer di 30 secondi
-        
-        
-        printf("invio al indirizzo ip del server : {\"t\": \"actuator\", \"n\": %s , \"s\": %d, \"c\": %.2f, \"d\": %d } \n: ", nome_dispositivo, stato_dispositivo, consumo_dispositivo, durata);
-        
-        snprintf(payload, sizeof(payload), "{\"t\": \"actuator\", \"n\": \"%s\", \"s\": %d, \"c\": %.2f, \"d\": %d }", nome_dispositivo, stato_dispositivo, consumo_dispositivo, durata);
-        printf("Invio segnale al server: %s\n", payload);
-        printf("Dimensione del payload: %zu\n", strlen(payload));
-        // Imposta il payload nella richiesta
-        coap_set_payload(request, (uint8_t *)payload, strlen(payload));
-        // Invia la richiesta al server
+    while (max_registration_retry != 0 && !is_registered) {
+        // Configura l'endpoint del server
+        coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &server_endpoint);
+        coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
+        coap_set_header_uri_path(request, "register/");
+
+        const char msg[] = "{\"t\": \"actuator\"}";
+        coap_set_payload(request, (uint8_t *)msg, sizeof(msg) - 1);
+
+        printf("Invio richiesta di registrazione: %s\n", msg);
+
         COAP_BLOCKING_REQUEST(&server_endpoint, request, client_registration_handler);
+
         if(!is_registered) {
-            etimer_set(&sleep_timer, 30 * CLOCK_SECOND);
-            PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&sleep_timer));
-        } 
+            max_registration_retry--;
+            if(max_registration_retry == 0) {
+                printf("Registrazione fallita dopo 3 tentativi. Attendo 30 secondi prima di riprovare.\n");
+                etimer_set(&sleep_timer, 30 * CLOCK_SECOND);
+                PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&sleep_timer));
+                max_registration_retry = 3;
+            }
+        }
     }
-    // Crea il payload JSON per la registrazione
-    printf("Registrazione completata con successo.\n");
+
+    if(is_registered) {
+        printf("Registrazione completata con successo.\n");
+    }
 
     PROCESS_END();
 }

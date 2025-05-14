@@ -25,6 +25,7 @@
 
 static int max_registration_retry = MAX_REGISTRATION_RETRY;
 extern void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
+
 void client_chunk_handler(coap_message_t *response){//
   if (response == NULL){
     LOG_ERR("Request timed out\n");
