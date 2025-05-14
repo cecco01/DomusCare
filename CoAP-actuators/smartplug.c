@@ -434,7 +434,7 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
     const char msg[] = "{\"t\": \"actuator\"}";
     coap_set_payload(request, (uint8_t *)msg, sizeof(msg) - 1);
 
-    leds_single_on(LEDS_YELLOW);
+    
 
     COAP_BLOCKING_REQUEST(&main_server_ep, request, client_registration_handler);
 
@@ -447,7 +447,7 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
   }
 
   LOG_INFO("REGISTRATION SUCCESS\n");
-  leds_single_off(LEDS_YELLOW);
+  
 
 
 //  while (1) {
