@@ -19,5 +19,5 @@ CFLAGS += -Wno-error
 CFLAGS += -Wno-unused-variable
 CFLAGS += -Wno-unused-function
 MAKE_ROUTING = MAKE_ROUTING_RPL_LITE
-include $(CONTIKI)/Makefile.include
+include $(CONTIKI)/Makefile.include 
 
