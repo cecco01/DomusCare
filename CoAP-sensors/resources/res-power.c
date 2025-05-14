@@ -26,7 +26,26 @@ static double current_power = 0;//memorizza l'ultimo valore generato
 static void res_event_handler(void){
   current_power = generate_gaussian(MEAN, STDDEV);
   LOG_INFO("Payload to be sent: {\"t\":\"power\", \"value\":%.2f}\n", current_power);//cambia campo tipo del JSON
-  coap_notify_observers(&res_power);
+  static void send_post_to_control() {
+    static coap_endpoint_t control_server_ep;
+    static coap_message_t request[1];
+
+    // Configura l'endpoint del server
+    coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &control_server_ep);
+
+    // Prepara il messaggio
+    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
+    coap_set_header_uri_path(request, "control");
+
+    // Payload da inviare
+    char msg[64];
+    snprintf(msg, sizeof(msg), "{\"tipo\": \"power\", \"valore\": %.2f}", current_power);
+    coap_set_payload(request, (uint8_t *)msg, strlen(msg));
+
+    // Invia la richiesta
+    LOG_INFO("Invio POST alla risorsa control: %s\n", msg);
+    COAP_BLOCKING_REQUEST(&control_server_ep, request, NULL);
+}
 }
 
 //quando un client CoAP richiede la risorsa, viene generato un payload JSON con il valore corrente

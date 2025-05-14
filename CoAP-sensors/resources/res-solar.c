@@ -11,6 +11,7 @@
 #include "sys/log.h"
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_APP
+#define SERVER_EP "coap://[fd00::1]:5683"  // Indirizzo del server
 
 #define MEAN 169.970005 //VALORI ANCORA DA STABILIRE ma sono valori realisitici per il Voltaggio
 #define STDDEV 14.283898 //VALORI ANCORA DA STABILIRE
@@ -27,7 +28,24 @@ static double current_solarpower = 0;//memorizza l'ultimo valore generato
 static void res_event_handler(void){
   current_solarpower = generate_gaussian(MEAN, STDDEV);
   LOG_INFO("Payload to be sent: {\"t\":\"solar\",\"value\" : %.2f}\n", current_solarpower);//cambia campo tipo del JSON
-  coap_notify_observers(&res_SolarPw);
+  
+    static coap_endpoint_t control_server_ep;
+    static coap_message_t request[1];
+
+    // Configura l'endpoint del server
+    coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &control_server_ep);
+
+    // Prepara il messaggio
+    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
+    coap_set_header_uri_path(request, "control");
+
+    // Payload da inviare
+    const char msg[] = "{\"t\": \"solar\", \"status\": \"triggered\"}";
+    coap_set_payload(request, (uint8_t *)msg, strlen(msg));
+
+    // Invia la richiesta
+    LOG_INFO("Invio POST alla risorsa control: %s\n", msg);
+    COAP_BLOCKING_REQUEST(&control_server_ep, request, client_chunk_handler);
 }
 
 //quando un client CoAP richiede la risorsa, viene generato un payload JSON con il valore corrente

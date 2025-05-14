@@ -55,8 +55,6 @@ class Record:
             Record.insert_record()
             Record.solar = 0
             Record.power = 0
-            Record.voltage = 0
-
     @staticmethod
     def insert_record():
         """

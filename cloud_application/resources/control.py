@@ -32,16 +32,26 @@ class Control(Resource):
         :return: Risposta CoAP con il risultato dell'operazione.
         """
         try:
+            # Parsing del payload JSON
             payload = json.loads(request.payload)
-            nome = payload.get("nome")
-            stato = payload.get("stato", 0)
+            tipo = payload.get("tipo")
+            valore = payload.get("valore")
 
-            if not nome:
-                self.payload = "Errore: nome del dispositivo mancante."
+            # Gestione dei valori in base al tipo
+            if tipo == "solar":
+                solarpower = valore
+                power = None
+            elif tipo == "power":
+                solarpower = None
+                power = valore
+            else:
+                self.payload = "Errore: tipo non riconosciuto."
+                print(self.payload)
                 return self
 
-            self.update_device_status(nome, stato)
-            self.payload = f"Stato del dispositivo '{nome}' aggiornato a {stato}."
+            # Inserisci i dati nel database
+            self.insert_data(solarpower, power)
+            self.payload = "Dati inseriti con successo nella tabella 'data'."
             print(self.payload)
             return self
         except json.JSONDecodeError:
@@ -49,9 +59,30 @@ class Control(Resource):
             print(self.payload)
             return self
         except Error as e:
-            self.payload = f"Errore durante l'aggiornamento dello stato del dispositivo: {e}"
+            self.payload = f"Errore durante l'inserimento dei dati: {e}"
             print(self.payload)
             return self
+
+    def insert_data(self, solarpower, power):
+        """
+        Inserisce un nuovo record nella tabella 'data'.
+
+        :param solarpower: Potenza generata dai pannelli solari (kW).
+        :param power: Potenza consumata (kW).
+        """
+        if not self.connection.is_connected():
+            print("Database connection lost.")
+            return
+
+        try:
+            cursor = self.connection.cursor()
+            query = "INSERT INTO data (solarpower, power) VALUES (%s, %s)"
+            cursor.execute(query, (solarpower, power))
+            self.connection.commit()
+            cursor.close()
+            print(f"Nuovo record inserito nella tabella 'data': solarpower={solarpower}, power={power}")
+        except Error as e:
+            print(f"Errore durante l'inserimento dei dati nella tabella 'data': {e}")
 
     def render_PUT(self, request):
         """
