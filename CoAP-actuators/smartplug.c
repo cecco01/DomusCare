@@ -64,6 +64,7 @@ static int last_sensor_value_valid = 0;
 void client_chunk_handler(coap_message_t *response) {
     const uint8_t *payload = NULL;
     size_t len = coap_get_payload(response, &payload);
+    
     if (len > 0) {
         printf("Risposta ricevuta: %.*s\n", (int)len, (const char *)payload);
         if(sscanf((const char *)payload, "%f", &last_sensor_value) == 1) {
@@ -79,6 +80,12 @@ void client_chunk_handler(coap_message_t *response) {
 
 void client_registration_handler(coap_message_t *response) {
     const uint8_t *payload = NULL;
+    if (response == NULL){
+        LOG_ERR("Request timed out\n");
+        is_registered = false;
+        number_of_retries++;
+        return;
+    }
     size_t len = coap_get_payload(response, &payload);
     if (len > 0) {
         is_registered = true;
