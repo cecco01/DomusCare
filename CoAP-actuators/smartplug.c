@@ -415,8 +415,10 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
         
         
         printf("invio al indirizzo ip del server %s: {\"t\": \"actuator\", \"n\": %s , \"s\": %d, \"c\": %.2f, \"d\": %d } \n: ", server_url, nome_dispositivo, stato_dispositivo, consumo_dispositivo, durata);
+        
         snprintf(payload, sizeof(payload), "{\"t\": \"actuator\", \"n\": %s , \"s\": %d, \"c\": %.2f, \"d\": %d }", nome_dispositivo, stato_dispositivo, consumo_dispositivo, durata);
-
+        printf("Invio segnale al server: %s\n", payload);
+        printf("Dimensione del payload: %zu\n", strlen(payload));
         // Imposta il payload nella richiesta
         coap_set_payload(request, (uint8_t *)payload, strlen(payload));
         // Invia la richiesta al server
