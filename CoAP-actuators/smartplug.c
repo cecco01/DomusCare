@@ -413,8 +413,6 @@ static int max_registration_retry = 3;
 static struct etimer e_timer, sleep_timer;
 int status = 1;
 
-PROCESS(registra_dispositivo_process, "Registra Dispositivo Process");
-//AUTOSTART_PROCESSES(&registra_dispositivo_process); ce ne può essere uno solo
 
 PROCESS_THREAD(registra_dispositivo_process, ev, data) {
   static coap_endpoint_t main_server_ep;
