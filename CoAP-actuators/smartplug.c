@@ -437,14 +437,21 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
     COAP_BLOCKING_REQUEST(&main_server_ep, request, client_registration_handler);
 
     /* -------------- END REGISTRAZIONE --------------*/
-    if (max_registration_retry == -1) {
+    if(!is_registered) {
+      max_registration_retry--;
+      printf("Registrazione non riuscita. Tentativi rimasti: %d\n", max_registration_retry);
+      if(max_registration_retry == 0) {
+        printf("Registrazione fallita. Attendo 30 secondi prima di riprovare.\n");
         etimer_set(&sleep_timer, 30 * CLOCK_SECOND);
-      PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&sleep_timer));
-      max_registration_retry = 3;
+        PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&sleep_timer));
+        max_registration_retry = 3;
+      }
     }
   }
 
-  LOG_INFO("REGISTRATION SUCCESS\n");
+  if(is_registered) {
+    LOG_INFO("REGISTRATION SUCCESS\n");
+  }
   
 
 
