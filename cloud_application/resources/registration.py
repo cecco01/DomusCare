@@ -36,14 +36,14 @@ class Registration(Resource):
         invia un messaggio CoAP al dispositivo Smart Plug con data e ora.
         """
         print(f"RENDER POST - Request parameters: {request.uri_query}")
+        
         try:
             # Parsing del payload JSON
             payload = json.loads(request.payload)
+            print(f"Payload ricevuto: {payload}")
             sensor_type = payload.get("t")
             ip_address = request.source #payload.get("ip_address")
 
-            print(f"Payload ricevuto: {request.payload}")
-            print(f"Dimensione del payload: {len(request.payload)}")
             print(f"Tipo: {sensor_type}, IP: {ip_address}")
 
             if not sensor_type or not ip_address:
@@ -131,19 +131,13 @@ class Registration(Resource):
         print(f"Registrato il sensore di tipo {sensor_type} con indirizzo IP {ip_address}.")
         # Se il sensore è un actuator, aggiungilo anche nella tabella dispositivi
         if sensor_type == "actuator":
-            dispositivo_query = """
-            INSERT INTO dispositivi (nome, stato, consumo_kwh, durata)
-            VALUES (%s, %s, %s, %s)
+            query = """
+            INSERT INTO devices (name, status, timeout)
+            VALUES (%s, %s, %s)
             """
-            # Estrai i dati dal payload JSON
-            nome_dispositivo = payload.get("n")
-            stato_dispositivo = payload.get("s")
-            consumo_kwh = payload.get("c")
-            durata_task = payload.get("d")
-            cursor.execute(dispositivo_query, (nome_dispositivo, stato_dispositivo, consumo_kwh, durata_task))
+            cursor.execute(query, (str(ip_address), , 0))
             self.connection.commit()
-            print(f"Registrato il dispositivo {nome_dispositivo} con stato {stato_dispositivo}, consumo {consumo_kwh} kWh e durata {durata_task} ore.")
-        cursor.close()
+            print(f"Registrato il dispositivo di tipo {sensor_type} con indirizzo IP {ip_address}.")
 
         # Invia il messaggio agli attuatori non attivi
         if sensor_type in ["solar", "power"]:
@@ -170,57 +164,62 @@ class Registration(Resource):
             self.send_activation_message(actuator_ip)
 
     def send_activation_message(self, ip_address):
-        """
-        Invia un messaggio CoAP al dispositivo Smart Plug per attivarlo con data, ora e indirizzi IP dei sensori.
-
-        :param ip_address: Indirizzo IP del dispositivo Smart Plug.
-        """
-        port = 5683
-        client = HelperClient(server=(ip_address, port))
-
+        client = None  # Inizializza la variabile client
         try:
-            # Ottieni la data e l'ora correnti
-            now = datetime.now()
+            # Estrai l'indirizzo IP dalla tupla
+            ip, port = ip_address  # ip_address è una tupla (indirizzo IP, porta)
+            print(f"Invio messaggio di attivazione al dispositivo con IP: {ip} e porta: {port}")
 
-            # Recupera gli indirizzi IP dei sensori dal database
+            # Recupera gli indirizzi IP di solar e power dal database
             cursor = self.connection.cursor()
             query = """
-            SELECT ip_address, type FROM sensor WHERE type IN ('solar', 'power')
+            SELECT type, ip_address FROM sensor
+            WHERE type IN ('solar', 'power')
             """
             cursor.execute(query)
             sensors = cursor.fetchall()
             cursor.close()
 
-            # Organizza gli indirizzi IP dei sensori
-            solar_ip = None
-            power_ip = None
-            for sensor in sensors:
-                if sensor[1] == "solar":
-                    solar_ip = sensor[0]
-                elif sensor[1] == "power":
-                    power_ip = sensor[0]
+            # Inizializza le variabili per gli IP
+            solar_ip = ""
+            power_ip = ""
 
-            # Crea il payload JSON
+            # Assegna gli indirizzi IP in base al tipo
+            for sensor_type, sensor_ip in sensors:
+                if sensor_type == "solar":
+                    solar_ip = f"coap://[{sensor_ip}]:5683"
+                    print(f"Solar IP: {solar_ip}")
+                elif sensor_type == "power":
+                    power_ip = f"coap://[{sensor_ip}]:5683"
+                    print(f"Power IP: {power_ip}")
+
+            # Log degli indirizzi IP (anche se vuoti)
+            print(f"INVIO DEGLI INDIRIZII : Indirizzo IP Solar: {solar_ip}, Indirizzo IP Power: {power_ip}")
+
+            # Crea il client CoAP
+            client = HelperClient(server=(ip, port))
+
+            # Costruisci il payload
             payload = {
-                "tipo": 0,
-                "ora": now.hour,
-                "minuti": now.minute,
-                "giorno": now.day,
-                "mese": now.month,
+                "ora": datetime.now().hour,
+                "minuti": datetime.now().minute,
+                "giorno": datetime.now().day,
+                "mese": datetime.now().month,
                 "solar_ip": solar_ip,
                 "power_ip": power_ip
             }
 
             # Invia il messaggio CoAP
-            print(f"Invio messaggio CoAP a {ip_address} con payload: {payload}")
-            response = client.post("Smartplug resource", json.dumps(payload))
+            response = client.post("activation", json.dumps(payload))
             if response:
                 print(f"Messaggio inviato al dispositivo Smart Plug: {payload}")
             else:
-                print("Errore durante l'sminvio del messaggio al dispositivo Smart Plug.")
+                print("Errore durante l'invio del messaggio al dispositivo Smart Plug.")
 
         except Exception as e:
             print(f"Errore durante l'invio del messaggio CoAP: {e}")
         finally:
-            client.stop()
+            if client:
+                client.stop()
+    
 
