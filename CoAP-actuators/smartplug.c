@@ -50,15 +50,28 @@ float model_consumption_regress1(const float *features, int num_features);
 float model_production_regress1(const float *features, int num_features);
 static bool is_registered = false;  // Flag per indicare se il dispositivo è registrato
 static int number_of_retries = 0;  // Numero di tentativi di registrazione
+
+//per evitare sigsev
+static float last_sensor_value = 0.0;
+static int last_sensor_value_valid = 0;
+
+
 void client_chunk_handler(coap_message_t *response) {
     const uint8_t *payload = NULL;
     size_t len = coap_get_payload(response, &payload);
     if (len > 0) {
         printf("Risposta ricevuta: %.*s\n", (int)len, (const char *)payload);
+        if(sscanf((const char *)payload, "%f", &last_sensor_value) == 1) {
+            last_sensor_value_valid = 1;
+        } else {
+            last_sensor_value_valid = 0;
+        }
     } else {
         printf("Nessun payload ricevuto nella risposta.\n");
+        last_sensor_value_valid = 0;
     }
 }
+
 void client_registration_handler(coap_message_t *response) {
     const uint8_t *payload = NULL;
     size_t len = coap_get_payload(response, &payload);
@@ -299,25 +312,20 @@ PROCESS_THREAD(richiedi_dati_sensore_process, ev, data) {
 
     static coap_endpoint_t server_endpoint;
     static coap_message_t request[1];
-    static float *dato_ricevuto;
-    
+    float *dato_ricevuto = (float *)data;
+    const char *server_ep = (const char *)data;
 
-    // Recupera i dati passati al processo
-   
-    dato_ricevuto = (float *)data;
-
-    coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &server_endpoint);
+    coap_endpoint_parse(server_ep, strlen(server_ep), &server_endpoint);
     coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
-    coap_set_header_uri_path(request, "register/");
+    coap_set_header_uri_path(request, server_ep);
 
+    printf("Richiesta dati al sensore: %s\n", server_ep);
 
+    last_sensor_value_valid = 0;
     COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
 
-    // Estrai il valore dal payload e assegnalo a dato_ricevuto
-    const uint8_t *payload = NULL;
-    size_t len = coap_get_payload(request, &payload);
-    if (len > 0) {
-        sscanf((const char *)payload, "%f", dato_ricevuto);
+    if (last_sensor_value_valid) {
+        *dato_ricevuto = last_sensor_value;
         printf("Dati ricevuti dal sensore: %.2f\n", *dato_ricevuto);
     } else {
         printf("Errore nella ricezione dei dati dal sensore.\n");
@@ -325,7 +333,6 @@ PROCESS_THREAD(richiedi_dati_sensore_process, ev, data) {
 
     PROCESS_END();
 }
-
 
 PROCESS_THREAD(disattiva_dispositivo_process, ev, data) {
     PROCESS_BEGIN();
