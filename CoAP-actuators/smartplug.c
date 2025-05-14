@@ -167,8 +167,8 @@ void avvia_dispositivo() {
 }
 
 // Funzione per registrare il dispositivo con il server
-void registra_dispositivo(const char *server_url,  const char *tipo_dispositivo) {
-    process_start(&registra_dispositivo_process, (void *)server_url);
+void registra_dispositivo(  const char *tipo_dispositivo) {
+    process_start(&registra_dispositivo_process);
     
 }
 
@@ -263,9 +263,8 @@ PROCESS_THREAD(smartplug_process, ev, data) {
     printf("Avvio del dispositivo IoT Smart Plug...\n");
 
     // Registra il dispositivo con il server
-    const char *server_url = "coap://[fd00::1]:5683";
     const char *tipo_dispositivo = "actuator";
-    registra_dispositivo(server_url, tipo_dispositivo);
+    registra_dispositivo( tipo_dispositivo);
 
     // Registra la risorsa CoAP per ricevere messaggi
     static coap_resource_t coap_resource;
@@ -307,11 +306,11 @@ PROCESS_THREAD(richiedi_dati_sensore_process, ev, data) {
    
     dato_ricevuto = (float *)data;
 
-    coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), SERVER_EP);
+    coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), server_endpoint);
     coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
-    coap_set_header_uri_path(request, SERVER_EP);
+    coap_set_header_uri_path(request, server_endpoint);
 
-    printf("Richiesta dati al sensore: %s\n", SERVER_EP);
+    printf("Richiesta dati al sensore: %s\n", server_endpoint);
 
     COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
 
@@ -403,10 +402,10 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
 
     static coap_endpoint_t server_endpoint;
     static coap_message_t request[1];
-    const char *server_url = (const char *)data;
+
 
     // Configura l'endpoint del server
-    coap_endpoint_parse(server_url, strlen(server_url), SERVER_EP);
+    coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), server_endpoint);
     coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
     coap_set_header_uri_path(request, "register/");
     while (!is_registered) {
