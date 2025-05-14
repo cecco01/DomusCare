@@ -7,7 +7,12 @@
 #include "coap-blocking-api.h"
 #include "../ML/smart_grid_model_consumption.h"
 #include "../ML/smart_grid_model_production.h"
+#include "sys/log.h"
+#include "os/dev/leds.h"
+#define LOG_MODULE "App"
+#define LOG_LEVEL LOG_LEVEL_APP
 
+extern coap_resource_t res_smartplug;
 #define MAX_FEATURES 5     // Numero massimo di feature per i modelli (senza il timestamp anno)
 #define INTERVALLO_PREDIZIONE 900  // Intervallo di predizione in secondi (15 minuti)
 
@@ -408,10 +413,10 @@ static int max_registration_retry = 3;
 static struct etimer e_timer, sleep_timer;
 int status = 1;
 
-PROCESS(smartplug_server, "SmartPlug CoAP Server");
-//AUTOSTART_PROCESSES(&smartplug_server); ce ne può essere uno solo
+PROCESS(registra_dispositivo_process, "Registra Dispositivo Process");
+//AUTOSTART_PROCESSES(&registra_dispositivo_process); ce ne può essere uno solo
 
-PROCESS_THREAD(smartplug_server, ev, data) {
+PROCESS_THREAD(registra_dispositivo_process, ev, data) {
   static coap_endpoint_t main_server_ep;
   static coap_message_t request[1];
 

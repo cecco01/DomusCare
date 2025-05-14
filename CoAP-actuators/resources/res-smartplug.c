@@ -3,7 +3,7 @@
 #include <string.h>
 #include <time.h>
 #include "coap-engine.h"
-#include "global.h"
+
 
 /* Log configuration */
 #include "sys/log.h"
