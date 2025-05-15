@@ -209,6 +209,10 @@ class Registration(Resource):
 
             # Assegna gli indirizzi IP in base al tipo
             for sensor_type, ip_port in sensors:
+                #faccio come sopra
+                if isinstance(ip_port, str):
+                    ip_port = eval(ip_port) 
+                
                 if isinstance(ip_port, tuple) and len(ip_port) == 2:  # Verifica che ip_port sia una tupla valida
                     sensor_ip, sensor_port = ip_port
                     formatted_ip = f"coap://[{sensor_ip}]:{sensor_port}"  # Formatta l'indirizzo IP e la porta
@@ -229,13 +233,15 @@ class Registration(Resource):
 
             # Costruisci il payload
             payload = {
-                "ora": datetime.now().hour,
-                "minuti": datetime.now().minute,
-                "giorno": datetime.now().day,
-                "mese": datetime.now().month,
-                "solar_ip": solar_ip,
-                "power_ip": power_ip
+                "o": datetime.now().hour,
+                "m": datetime.now().minute,
+                "g": datetime.now().day,
+                "h": datetime.now().month,
+                "s": solar_ip,
+                "p": power_ip
             }
+            print(f"Payload da inviare: {payload}")
+            print(f"LUNGHEZZA: {len(payload)}")
 
             # Invia il messaggio CoAP
             response = client.post("activation", json.dumps(payload))

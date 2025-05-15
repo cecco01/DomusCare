@@ -66,23 +66,23 @@ static void res_post_handler(coap_message_t *request, coap_message_t *response, 
     json[len] = '\0';
 
     // Parsing manuale del JSON
-    if (strstr(json, "\"ora\":") != NULL) {
-        sscanf(strstr(json, "\"ora\":") + 6, "%d", &ora);
+    if (strstr(json, "\"o\":") != NULL) {
+        sscanf(strstr(json, "\"o\":") + 6, "%d", &ora);
     }
-    if (strstr(json, "\"minuti\":") != NULL) {
-        sscanf(strstr(json, "\"minuti\":") + 9, "%d", &minuti);
+    if (strstr(json, "\"m\":") != NULL) {
+        sscanf(strstr(json, "\"m\":") + 9, "%d", &minuti);
     }
-    if (strstr(json, "\"giorno\":") != NULL) {
-        sscanf(strstr(json, "\"giorno\":") + 9, "%d", &giorno);
+    if (strstr(json, "\"g\":") != NULL) {
+        sscanf(strstr(json, "\"g\":") + 9, "%d", &giorno);
     }
-    if (strstr(json, "\"mese\":") != NULL) {
-        sscanf(strstr(json, "\"mese\":") + 7, "%d", &mese);
+    if (strstr(json, "\"h\":") != NULL) {
+        sscanf(strstr(json, "\"h\":") + 7, "%d", &mese);
     }
-    if (strstr(json, "\"solar_ip\":") != NULL) {
-        sscanf(strstr(json, "\"solar_ip\":") + 12, "%63[^\"]", solar_ip);
+    if (strstr(json, "\"s\":") != NULL) {
+        sscanf(strstr(json, "\"s\":") + 12, "%63[^\"]", solar_ip);
     }
-    if (strstr(json, "\"power_ip\":") != NULL) {
-        sscanf(strstr(json, "\"power_ip\":") + 12, "%63[^\"]", power_ip);
+    if (strstr(json, "\"p\":") != NULL) {
+        sscanf(strstr(json, "\"p\":") + 12, "%63[^\"]", power_ip);
     }
 
     // Verifica se tutti i campi sono stati estratti correttamente
