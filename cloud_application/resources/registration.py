@@ -134,7 +134,7 @@ class Registration(Resource):
         if sensor_type == "actuator":
 
             query = """
-            INSERT INTO devices (name, consumo_kwh,durata)
+            INSERT INTO dispositivi (nome, consumo_kwh,durata)
             VALUES (%s, %s, %s)
             """
             # Estrai i dati dal payload
