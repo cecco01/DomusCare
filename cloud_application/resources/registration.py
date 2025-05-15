@@ -45,7 +45,7 @@ class Registration(Resource):
             ip_address = request.source #payload.get("ip_address")
             if sensor_type =="a":
                 sensor_type== "actuator"
-            print(f"Tipo: {sensor_type}, IP: {ip_address}")
+            #print(f"Tipo: {sensor_type}, IP: {ip_address}")
 
             if not sensor_type or not ip_address:
                 print("Tipo o indirizzo IP mancante.")
@@ -53,7 +53,7 @@ class Registration(Resource):
                 return self
 
             # Inserisce il sensore nel database
-            print(f"tipo: {sensor_type}, ip_address: {ip_address}")
+            #print(f"tipo: {sensor_type}, ip_address: {ip_address}")
             self.register_sensor(sensor_type, ip_address, payload)
 
             # Se il tipo è 'actuator', invia un messaggio CoAP al dispositivo Smart Plug
@@ -121,7 +121,7 @@ class Registration(Resource):
         """
         if not self.connection.is_connected():
             raise Error("Connessione al database persa.")
-        print(f'Creo il cursore, ip_address: {ip_address}, sensor_type: {sensor_type}')
+        #print(f'Creo il cursore, ip_address: {ip_address}, sensor_type: {sensor_type}')
         cursor = self.connection.cursor()
         query = """
         INSERT INTO sensor (type, ip_address)
@@ -215,7 +215,7 @@ class Registration(Resource):
                 
                 if isinstance(ip_port, tuple) and len(ip_port) == 2:  # Verifica che ip_port sia una tupla valida
                     sensor_ip, sensor_port = ip_port
-                    formatted_ip = f"coap://[{sensor_ip}]:{sensor_port}"  # Formatta l'indirizzo IP e la porta
+                    formatted_ip = f"{sensor_ip}]:{sensor_port}"  # Formatta l'indirizzo IP e la porta
                     if sensor_type == "solar":
                         solar_ip = formatted_ip
                         print(f"Solar IP: {solar_ip}")
@@ -241,14 +241,26 @@ class Registration(Resource):
                 "p": power_ip
             }
             print(f"Payload da inviare: {payload}")
-            print(f"LUNGHEZZA: {len(payload)}")
+            #lunghezza in byte
 
-            # Invia il messaggio CoAP
-            response = client.post("activation", json.dumps(payload))
-            if response:
-                print(f"Messaggio inviato al dispositivo Smart Plug: {payload}")
-            else:
-                print("Errore durante l'invio del messaggio al dispositivo Smart Plug.")
+            payload_length = len(json.dumps(payload).encode('utf-8'))
+            print(f"LUNGHEZZA: {payload_length} bytes")
+
+            # Suddividi il payload in blocchi di 64 byte
+            payload_json = json.dumps(payload)
+            payload_bytes = payload_json.encode('utf-8')
+            block_size = 64
+            blocks = [payload_bytes[i:i + block_size] for i in range(0, len(payload_bytes), block_size)]
+
+            # Invia i blocchi uno alla volta
+            for i, block in enumerate(blocks):
+                print(f"Inviando blocco {i + 1}/{len(blocks)}: {block.decode('utf-8', errors='ignore')}")
+                response = client.post("smartplug", block, timeout=10)
+                if response:
+                    print(f"Blocco {i + 1} inviato con successo.")
+                else:
+                    print(f"Errore durante l'invio del blocco {i + 1}.")
+                    break
 
         except Exception as e:
             print(f"Errore durante l'invio del messaggio CoAP: {e}")

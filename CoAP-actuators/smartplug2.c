@@ -53,41 +53,65 @@ void client_chunk_handler(coap_message_t *response) {
 }
 static void res_post_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
     const uint8_t *payload = NULL;
+    LOG_INFO("POST request ricevuto\n");
+    
     size_t len = coap_get_payload(request, &payload);
-
+    LOG_INFO("Payload ricevuto: %.*s\n", (int)len, (const char *)payload);
     if (payload == NULL || len == 0) {
         LOG_ERR("Payload vuoto o nullo\n");
         return;
     }
 
-    // Converte il payload in una stringa null-terminated
-    char json[len + 1];
-    memcpy(json, payload, len);
-    json[len] = '\0';
+    // Gestione del payload in blocchi
+    static char json[256]; // Buffer per il payload completo
+    static size_t received_len = 0; // Lunghezza totale ricevuta finora
 
-    // Parsing manuale del JSON
-    if (strstr(json, "\"o\":") != NULL) {
-        sscanf(strstr(json, "\"o\":") + 6, "%d", &ora);
-    }
-    if (strstr(json, "\"m\":") != NULL) {
-        sscanf(strstr(json, "\"m\":") + 9, "%d", &minuti);
-    }
-    if (strstr(json, "\"g\":") != NULL) {
-        sscanf(strstr(json, "\"g\":") + 9, "%d", &giorno);
-    }
-    if (strstr(json, "\"h\":") != NULL) {
-        sscanf(strstr(json, "\"h\":") + 7, "%d", &mese);
-    }
-    if (strstr(json, "\"s\":") != NULL) {
-        sscanf(strstr(json, "\"s\":") + 12, "%63[^\"]", solar_ip);
-    }
-    if (strstr(json, "\"p\":") != NULL) {
-        sscanf(strstr(json, "\"p\":") + 12, "%63[^\"]", power_ip);
+    // Copia il blocco ricevuto nel buffer
+    if (*offset + len <= sizeof(json)) {
+        memcpy(json + *offset, payload, len);
+        received_len = *offset + len;
+        json[received_len] = '\0'; // Assicurati che sia null-terminated
+    } else {
+        LOG_ERR("Payload troppo grande, impossibile gestirlo\n");
+        coap_set_status_code(response, BAD_REQUEST_4_00);
+        return;
     }
 
-    // Verifica se tutti i campi sono stati estratti correttamente
-    if (tipo >= 0 && ora >= 0 && minuti >= 0 && giorno > 0 && mese > 0 &&
-        strlen(solar_ip) > 0 && strlen(power_ip) > 0) {
+    // Controlla se il payload è completo
+    if (*offset + len >= preferred_size) {
+        LOG_INFO("Payload completo ricevuto: %s\n", json);
+
+        // Parsing manuale del JSON
+        if (strstr(json, "\"o\":") != NULL) {
+            sscanf(strstr(json, "\"o\":") + 6, "%d", &ora);
+        }
+        if (strstr(json, "\"m\":") != NULL) {
+            sscanf(strstr(json, "\"m\":") + 9, "%d", &minuti);
+        }
+        if (strstr(json, "\"g\":") != NULL) {
+            sscanf(strstr(json, "\"g\":") + 9, "%d", &giorno);
+        }
+        if (strstr(json, "\"h\":") != NULL) {
+            sscanf(strstr(json, "\"h\":") + 7, "%d", &mese);
+        }
+        if (strstr(json, "\"s\":") != NULL) {
+            sscanf(strstr(json, "\"s\":") + 12, "%63[^\"]", solar_ip);
+            char formatted_solar_ip[80];
+            snprintf(formatted_solar_ip, sizeof(formatted_solar_ip), "coap://[%s]", solar_ip);
+            strncpy(solar_ip, formatted_solar_ip, sizeof(solar_ip) - 1);
+            solar_ip[sizeof(solar_ip) - 1] = '\0';
+            LOG_INFO("Solar IP: %s\n", solar_ip);
+        }
+        if (strstr(json, "\"p\":") != NULL) {
+            sscanf(strstr(json, "\"p\":") + 12, "%63[^\"]", power_ip);
+            char formatted_power_ip[80];
+            snprintf(formatted_power_ip, sizeof(formatted_power_ip), "coap://[%s]", power_ip);
+            strncpy(power_ip, formatted_power_ip, sizeof(power_ip) - 1);
+            power_ip[sizeof(power_ip) - 1] = '\0';
+            LOG_INFO("Power IP: %s\n", power_ip);
+        }
+
+        // Verifica se tutti i campi sono stati estratti correttamente
         LOG_INFO("Registrazione ricevuta e memorizzata:\n");
         LOG_INFO("Tipo: %d\n", tipo);
         LOG_INFO("Ora: %d:%d\n", ora, minuti);
@@ -96,11 +120,16 @@ static void res_post_handler(coap_message_t *request, coap_message_t *response, 
         LOG_INFO("Power IP: %s\n", power_ip);
 
         // Inizializza il timer per l'orologio
-        etimer_set(&clock_timer, 60 * CLOCK_SECOND);  // Aggiorna ogni minuto
-        orologio_attivo = true;  // Attiva l'orologio
-    } else {
-        LOG_ERR("JSON non valido o campi mancanti\n");
+        etimer_set(&clock_timer, 60 * CLOCK_SECOND); // Aggiorna ogni minuto
+        orologio_attivo = true; // Attiva l'orologio
+
+        // Resetta il buffer per il prossimo payload
+        memset(json, 0, sizeof(json));
+        received_len = 0;
     }
+
+    // Imposta il codice di risposta
+    coap_set_status_code(response, CHANGED_2_04);
 }
 
 EVENT_RESOURCE(res_smartplug,
