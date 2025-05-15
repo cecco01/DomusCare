@@ -195,7 +195,7 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
 
     LOG_INFO("Starting SmartPlug Server\n");
 
-    while (max_registration_retry != 0) {
+    while (!is_registered) {
         /* -------------- REGISTRAZIONE --------------*/
         coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &main_server_ep);
         coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
