@@ -56,6 +56,28 @@ void client_chunk_handler(coap_message_t *response) {
         // ancora da gestire 
     } 
 }
+void sensor_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
+    const uint8_t *payload = NULL;
+    size_t len = coap_get_payload(request, &payload);
+    if (len > 0) {
+        char json[64];
+        char tipo[20];
+        printf("Messaggio CoAP ricevuto: %.*s\n", (int)len, (const char *)payload);
+        if (strstr(json, "\"t\":") != NULL) {
+            sscanf(strstr(json, "\"t\":") + 5, "%d", tipo);
+
+        }
+        if (strcmp(tipo, "solar") == 0) {
+            if (strstr(json, "\"v\":") != NULL) {
+                sscanf(strstr(json, "\"v\":") + 5, "%d", &produzione);
+                LOG_INFO("Produzione solare: %d\n", produzione);
+            }
+            if (strstr(json, "\"v\":") != NULL) {
+                sscanf(strstr(json, "\"v\":") + 5, "%d", &consumo);
+                LOG_INFO("Consumo energetico: %d\n", consumo);
+            }
+    }
+}
 
 static char json[256];
 static void res_post_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
@@ -141,20 +163,13 @@ PROCESS_THREAD(richiedi_dati_sensore_process, ev, data) {
 
     coap_endpoint_parse(server_ep, strlen(server_ep), &server_endpoint);
     coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
-    coap_set_header_uri_path(request, server_ep);
+    coap_set_header_uri_path(request, "valore/");
 
     printf("Richiesta dati al sensore: %s\n", server_ep);
 
-    last_sensor_value_valid = 0;
-    COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
+    COAP_BLOCKING_REQUEST(&server_endpoint, request, sensor_handler);
 
-    if (last_sensor_value_valid) {
-        *dato_ricevuto = last_sensor_value;
-        printf("Dati ricevuti dal sensore: %.2f\n", *dato_ricevuto);
-    } else {
-        printf("Errore nella ricezione dei dati dal sensore.\n");
-    }
-
+    
     PROCESS_END();
 }
 
