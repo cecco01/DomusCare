@@ -21,7 +21,31 @@ class Control(Resource):
         """
         print(f"RENDER GET - Request parameters: {request.uri_query}")
         query = request.uri_query
-        self.fetch_sensor_from_db(query)
+        #aggiunta per far sì che, quando riceve una richiesta GET con la query string ?type=actuator, il server risponda con la lista degli attuatori e i loro indirizzi IP.
+        # Se la query è 'type=actuator', restituisci la lista degli attuatori
+        if query and "type=actuator" in query:
+            if not self.connection.is_connected():
+                self.payload = None
+                print("Database connection lost, Payload: None")
+                return self
+        try:
+            cursor = self.connection.cursor()
+            # Adatta la query SQL ai nomi delle tue colonne/tabelle!
+            cursor.execute("SELECT nome, ip_address FROM dispositivi WHERE tipo = 'actuator'")
+            attuatori = [{"nome": row[0], "ip_address": row[1]} for row in cursor.fetchall()]
+            cursor.close()
+            self.payload = json.dumps(attuatori)
+            print(f"Payload attuatori: {self.payload}")
+        except Error as e:
+            self.payload = None
+            print(f"Errore nel recupero attuatori: {e}")
+            return self
+        #fine aggiunta
+        #altra correzione: prima prendeva solo il primo elemento della query string, ora prende tutto
+        sensor_type = None
+        if query and query.startswith("type="):
+            sensor_type = query.split("=")[1]
+        self.fetch_sensor_from_db(sensor_type)
         return self
 
     def render_POST(self, request):
@@ -60,9 +84,8 @@ class Control(Resource):
                 print(self.payload)
                 return self
 
-            # Inserisci i dati nel database
-            
-            self.payload = "Dati inseriti con successo nella tabella 'data'."
+
+            self.payload = "Stato dle dispositivo aggiornato(??)."
             print(self.payload)
             return self
         except json.JSONDecodeError:
@@ -115,7 +138,7 @@ class Control(Resource):
             cursor.execute(query, (solarpower, power, smartplug))
             self.connection.commit()
             cursor.close()
-            print(f"Nuovo record inserito nella tabella 'data': solarpower={solarpower}, power={power}")
+            print(f"Nuovo record inserito nella tabella 'data': solarpower={solarpower}, power={power}, smartplug={smartplug}")
         except Error as e:
             print(f"Errore durante l'inserimento dei dati nella tabella 'data': {e}")
 

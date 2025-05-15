@@ -106,6 +106,8 @@ def rimuovi_dispositivo(nome):
 
 # Menu principale
 def main():
+    print("Recupero lista attuatori dal server...")
+    recupera_lista_attuatori()#prima del ciclo di gestione dei dispositivi richiedo la lista degli attuatori
     while True:
         print("\nGestione da terminale:")
         print("1. Mostra dispositivi")
@@ -132,3 +134,23 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+#all'avvio delll'applicazione remota viene mostrata la lista degli attuatori disponibili
+def recupera_lista_attuatori():
+    client = HelperClient(server=(SERVER_IP, SERVER_PORT))
+    try:
+        response = client.get("control/?type=actuator")
+        if response:
+            attuatori = json.loads(response.payload)
+            print("Attuatori disponibili:")
+            for attuatore in attuatori:
+                print(f"Nome: {attuatore['nome']}, IP: {attuatore['ip_address']}")
+            return attuatori
+        else:
+            print("Errore nel recupero della lista attuatori.")
+            return []
+    except Exception as e:
+        print(f"Errore nella richiesta CoAP: {e}")
+        return []
+    finally:
+        client.stop()
