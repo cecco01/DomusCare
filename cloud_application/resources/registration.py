@@ -215,7 +215,7 @@ class Registration(Resource):
                 
                 if isinstance(ip_port, tuple) and len(ip_port) == 2:  # Verifica che ip_port sia una tupla valida
                     sensor_ip, sensor_port = ip_port
-                    formatted_ip = f"{sensor_ip}]:{sensor_port}"  # Formatta l'indirizzo IP e la porta
+                    formatted_ip = f"coap://[{sensor_ip}]:{sensor_port}"  # Formatta l'indirizzo IP e la porta
                     if sensor_type == "solar":
                         solar_ip = formatted_ip
                         print(f"Solar IP: {solar_ip}")
@@ -241,13 +241,16 @@ class Registration(Resource):
                 "p": power_ip
             }
             print(f"Payload da inviare: {payload}")
-            #lunghezza in byte
 
-            payload_length = len(json.dumps(payload).encode('utf-8'))
+            # Aggiungi "/end/" al payload
+            payload_json = json.dumps(payload) + "/end/"
+            print(f"Payload con /end/: {payload_json}")
+
+            # Lunghezza in byte
+            payload_length = len(payload_json.encode('utf-8'))
             print(f"LUNGHEZZA: {payload_length} bytes")
 
             # Suddividi il payload in blocchi di 64 byte
-            payload_json = json.dumps(payload)
             payload_bytes = payload_json.encode('utf-8')
             block_size = 64
             blocks = [payload_bytes[i:i + block_size] for i in range(0, len(payload_bytes), block_size)]
