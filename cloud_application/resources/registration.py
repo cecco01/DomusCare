@@ -182,7 +182,8 @@ class Registration(Resource):
         client = None  # Inizializza la variabile client
         try:
             # Estrai l'indirizzo IP dalla tupla
-            ip, port = ip_address  # ip_address è una tupla (indirizzo IP, porta)
+            ip = ip_address  # ip_address è una tupla (indirizzo IP, porta)
+            port = 5683
             print(f"Invio messaggio di attivazione al dispositivo con IP: {ip} e porta: {port}")
 
             # Recupera gli indirizzi IP di solar e power dal database
@@ -201,16 +202,17 @@ class Registration(Resource):
 
             # Assegna gli indirizzi IP in base al tipo
             for sensor_type, ip_port in sensors:
-                if isinstance(ip_port, tuple) and len(ip_port) == 2:
-                    sensor_ip, sensor_port = ip_port
+               # if isinstance(ip_port, tuple) and len(ip_port) == 2: #questa parte la rimuovo temporaneamente causa errori "too many unpack"
+                    sensor_ip = ip_port
+                    sensor_port = 5683
                     if sensor_type == "solar":
                         solar_ip = f"coap://[{sensor_ip}]:{sensor_port}"
                         print(f"Solar IP: {solar_ip}")
                     elif sensor_type == "power":
                         power_ip = f"coap://[{sensor_ip}]:{sensor_port}"
                         print(f"Power IP: {power_ip}")
-                else:
-                    print(f"Formato non valido per ip_port: {ip_port}")
+               # else:
+               #     print(f"Formato non valido per ip_port: {ip_port}")
 
             # Log degli indirizzi IP (anche se vuoti)
             print(f"INVIO DEGLI INDIRIZII : Indirizzo IP Solar: {solar_ip}, Indirizzo IP Power: {power_ip}")
