@@ -5,6 +5,8 @@
 #include "coap-engine.h"
 #include "sys/etimer.h"
 #include "coap-blocking-api.h"
+#include "../ML/smart_grid_model_consumption.h"
+#include "../ML/smart_grid_model_production.h"
 
 #include "sys/log.h"
 #include "os/dev/leds.h"
@@ -21,32 +23,39 @@ static int max_registration_retry = 3;
 static bool is_registered = false;
 static int number_of_retries = 0;
 //static int tipo = 0;
+static struct etimer task_timer;
+static int durata_task = 60;  // Default duration in minutes
 static int  minuti = 0, giorno = 0, mese = 0, ore = 0;
 static char solar_ip[80] = {0};
 static char power_ip[80] = {0};
 static bool orologio_attivo = false;
-
+float model_consumption_regress1(const float *features, int num_features);
+float model_production_regress1(const float *features, int num_features);
+static struct etimer efficient_timer;
 static int stato_dispositivo = 0;  // Stato del dispositivo: 0=Spento, 1=Attivo, 2=Pronto
-static int produzione = 0;  // Produzione energetica corrente
-static int consumo = 0;  // Consumo energetico corrente
+static float produzione = 0;  // Produzione energetica corrente
+static float consumo = 0;  // Consumo energetico corrente
 static int numero_ripetizioni = 0;  // Dichiarazione globale
 static int tempo_limite = 0;  // Tempo in ore entro il quale il task deve essere completato
 //variabili del dispositivo
 /*
 static char *nome_dispositivo = "Lavatrice";  // Nome del disposit
-static float consumo_dispositivo = 1.5;  // Consumo energetico corrente
+  // Consumo energetico corrente
 static int durata_task = 60 ;  // Durata del task in secondi
 */
+PROCESS(avvia_dispositivo_process, "Avvia Dispositivo Process");
+#define INTERVALLO_PREDIZIONE 900 // 15 minutes in seconds
+static float consumo_dispositivo = 1.5;
 PROCESS(registra_dispositivo_process, "Registra Dispositivo Process");
 PROCESS(disattiva_dispositivo_process, "Disattiva Dispositivo Process");
 PROCESS(smartplug_process, "Smart Plug Process");
 PROCESS(richiedi_dati_sensore_process, "Richiedi Dati Sensore Process");
 
 AUTOSTART_PROCESSES(&smartplug_process);
-
+void avvia_dispositivo();
 void disattiva_dispositivo(void);
 void aggiorna_orologio(void);
-void richiedi_dati_sensore(const char *server_ep, float *dato_ricevuto);
+void richiedi_dati_sensore(const char *server_ep);
 void client_chunk_handler(coap_message_t *response) {
     const uint8_t *payload = NULL;
     size_t len = coap_get_payload(response, &payload);
@@ -56,7 +65,7 @@ void client_chunk_handler(coap_message_t *response) {
         // ancora da gestire 
     } 
 }
-void sensor_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
+void sensor_handler(coap_message_t *request) {
     const uint8_t *payload = NULL;
     size_t len = coap_get_payload(request, &payload);
     if (len > 0) {
@@ -64,23 +73,22 @@ void sensor_handler(coap_message_t *request, coap_message_t *response, uint8_t *
         char tipo[20];
         printf("Messaggio CoAP ricevuto: %.*s\n", (int)len, (const char *)payload);
         if (strstr(json, "\"t\":") != NULL) {
-            sscanf(strstr(json, "\"t\":") + 5, "%d", tipo);
-
+            sscanf(strstr(json, "\"t\":") + 5, "%s", tipo);
         }
         if (strcmp(tipo, "solar") == 0) {
             if (strstr(json, "\"v\":") != NULL) {
-                sscanf(strstr(json, "\"v\":") + 5, "%d", &produzione);
-                LOG_INFO("Produzione solare: %d\n", produzione);
+                sscanf(strstr(json, "\"v\":") + 5, "%f", &produzione);
+                LOG_INFO("Produzione solare: %f\n", produzione);
             }
             if (strstr(json, "\"v\":") != NULL) {
-                sscanf(strstr(json, "\"v\":") + 5, "%d", &consumo);
-                LOG_INFO("Consumo energetico: %d\n", consumo);
+                sscanf(strstr(json, "\"v\":") + 5, "%f", &consumo);
+                LOG_INFO("Consumo energetico: %f\n", consumo);
             }
+        }
     }
 }
-
 static char json[256];
-static void res_post_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
+void res_post_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
     const uint8_t *payload = NULL;
     size_t len = coap_get_payload(request, &payload);
     LOG_INFO("POST ricevuto\n");
@@ -149,7 +157,7 @@ static void res_post_handler(coap_message_t *request, coap_message_t *response, 
 
     coap_set_status_code(response, CHANGED_2_04);
 }
-void richiedi_dati_sensore(const char *server_ep, float *dato_ricevuto) {
+void richiedi_dati_sensore(const char *server_ep) {
     process_start(&richiedi_dati_sensore_process, (void *)server_ep);
 }
 
@@ -158,7 +166,6 @@ PROCESS_THREAD(richiedi_dati_sensore_process, ev, data) {
 
     static coap_endpoint_t server_endpoint;
     static coap_message_t request[1];
-    float *dato_ricevuto = (float *)data;
     const char *server_ep = (const char *)data;
 
     coap_endpoint_parse(server_ep, strlen(server_ep), &server_endpoint);
@@ -176,8 +183,10 @@ PROCESS_THREAD(richiedi_dati_sensore_process, ev, data) {
 void calcola_momento_migliore() {
     printf("Inizio calcolo del momento migliore per avviare il dispositivo...\n");
 
-    richiedi_dati_sensore(solar_ip, &produzione);
-    richiedi_dati_sensore(power_ip, &consumo);
+    richiedi_dati_sensore(solar_ip);
+    richiedi_dati_sensore(power_ip);
+    float features_produzione[4];
+    float features_consumo[4];
     features_produzione[0] = mese;  // Mese
     features_produzione[1] = giorno;  // Giorno
     features_produzione[2] = ore;  // Ora
@@ -186,8 +195,8 @@ void calcola_momento_migliore() {
     features_consumo[1] = giorno;   // Giorno
     features_consumo[2] = ore;      // Ora
     features_consumo[3] = consumo;    // Tensione (Volt)
-    float consumo_predetto = model_consumption_regress1(features_produzione, MAX_FEATURES);
-    float produzione_solare_predetta = model_production_regress1(features_produzione, MAX_FEATURES);
+    float consumo_predetto = model_consumption_regress1(features_consumo, 4);
+    float produzione_solare_predetta = model_production_regress1(features_produzione, 4);
 
     // Controlla se c'è surplus energetico
     if (produzione_solare_predetta > consumo_predetto + consumo_dispositivo && produzione > consumo) {
@@ -207,8 +216,8 @@ void calcola_momento_migliore() {
     }
 }
 void calcola_momento_migliore();
-void richiedi_dati_sensore(const char *server_ep, float *dato_ricevuto);
-void avvia_dispositivo();
+void richiedi_dati_sensore(const char *server_ep);
+
 float model_consumption_regress1(const float *features, int num_features);
 float model_production_regress1(const float *features, int num_features);
 void avvia_dispositivo() {

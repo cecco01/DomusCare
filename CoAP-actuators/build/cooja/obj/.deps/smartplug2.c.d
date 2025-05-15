@@ -42,6 +42,12 @@ build/cooja/obj/smartplug2.o: smartplug2.c \
  /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-observe-client.h \
  /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-blocking-api.h \
  /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-request-state.h \
+ ../ML/smart_grid_model_consumption.h \
+ /home/iot_ubuntu_intel/.local/lib/python3.10/site-packages/emlearn/eml_net.h \
+ /home/iot_ubuntu_intel/.local/lib/python3.10/site-packages/emlearn/eml_common.h \
+ /home/iot_ubuntu_intel/.local/lib/python3.10/site-packages/emlearn/eml_log.h \
+ /home/iot_ubuntu_intel/.local/lib/python3.10/site-packages/emlearn/eml_net_common.h \
+ ../ML/smart_grid_model_production.h \
  /home/iot_ubuntu_intel/contiki-ng/os/sys/log.h \
  /home/iot_ubuntu_intel/contiki-ng/os/sys/log-conf.h \
  /home/iot_ubuntu_intel/contiki-ng/os/dev/leds.h \
@@ -90,6 +96,12 @@ project-conf.h:
 /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-observe-client.h:
 /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-blocking-api.h:
 /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-request-state.h:
+../ML/smart_grid_model_consumption.h:
+/home/iot_ubuntu_intel/.local/lib/python3.10/site-packages/emlearn/eml_net.h:
+/home/iot_ubuntu_intel/.local/lib/python3.10/site-packages/emlearn/eml_common.h:
+/home/iot_ubuntu_intel/.local/lib/python3.10/site-packages/emlearn/eml_log.h:
+/home/iot_ubuntu_intel/.local/lib/python3.10/site-packages/emlearn/eml_net_common.h:
+../ML/smart_grid_model_production.h:
 /home/iot_ubuntu_intel/contiki-ng/os/sys/log.h:
 /home/iot_ubuntu_intel/contiki-ng/os/sys/log-conf.h:
 /home/iot_ubuntu_intel/contiki-ng/os/dev/leds.h:
