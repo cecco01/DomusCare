@@ -43,7 +43,8 @@ class Registration(Resource):
             print(f"Payload ricevuto: {payload}")
             sensor_type = payload.get("t")
             ip_address = request.source #payload.get("ip_address")
-
+            if sensor_type =="a":
+                sensor_type== "actuator"
             print(f"Tipo: {sensor_type}, IP: {ip_address}")
 
             if not sensor_type or not ip_address:
@@ -133,21 +134,20 @@ class Registration(Resource):
         if sensor_type == "actuator":
 
             query = """
-            INSERT INTO devices (name, stato, consumo_kwh,durata)
+            INSERT INTO devices (name, consumo_kwh,durata)
             VALUES (%s, %s, %s)
             """
             # Estrai i dati dal payload
             name = payload.get("n")
-            stato = payload.get("s")
             consumo_kwh = payload.get("c")
             durata = payload.get("d")
             # Verifica se i dati sono presenti e validi
-            if not name or not stato or not consumo_kwh or not durata:
-                print(f"Errore: Dati mancanti nel payload. name={name}, stato={stato}, consumo_kwh={consumo_kwh}, durata={durata}")
-        
+            if not name or not consumo_kwh or not durata:
+                print(f"Errore: Dati mancanti nel payload. name={name}, consumo_kwh={consumo_kwh}, durata={durata}")
+
                 
             # Esegui l'inserimento nella tabella dispositivi
-            cursor.execute(query, (str(name), str(stato), float(consumo_kwh), int(durata)))
+            cursor.execute(query, (str(name), float(consumo_kwh), int(durata)))
             
             self.connection.commit()
             print(f"Registrato il dispositivo di tipo {sensor_type} con indirizzo IP {ip_address}.")
