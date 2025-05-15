@@ -41,16 +41,22 @@ class Control(Resource):
             if tipo == "solar":
                 solarpower = valore
                 power = None
+                smartplug = None
             elif tipo == "power":
                 solarpower = None
                 power = valore
+                smartplug = None
+            elif tipo == "actuator":
+                solarpower = None
+                power = None
+                smartplug = valore
             else:
                 self.payload = "Errore: tipo non riconosciuto."
                 print(self.payload)
                 return self
 
             # Inserisci i dati nel database
-            self.insert_data(solarpower, power)
+            self.insert_data(solarpower, power, smartplug)
             self.payload = "Dati inseriti con successo nella tabella 'data'."
             print(self.payload)
             return self
@@ -63,7 +69,7 @@ class Control(Resource):
             print(self.payload)
             return self
 
-    def insert_data(self, solarpower, power):
+    def insert_data(self, solarpower, power, smartplug):
         """
         Inserisce un nuovo record nella tabella 'data'.
 
@@ -76,8 +82,8 @@ class Control(Resource):
 
         try:
             cursor = self.connection.cursor()
-            query = "INSERT INTO data (solarpower, power) VALUES (%s, %s)"
-            cursor.execute(query, (solarpower, power))
+            query = "INSERT INTO data (solarpower, power, smartplug) VALUES (%s, %s, %s)"
+            cursor.execute(query, (solarpower, power, smartplug))
             self.connection.commit()
             cursor.close()
             print(f"Nuovo record inserito nella tabella 'data': solarpower={solarpower}, power={power}")
