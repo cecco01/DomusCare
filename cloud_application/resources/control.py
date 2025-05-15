@@ -34,8 +34,8 @@ class Control(Resource):
         try:
             # Parsing del payload JSON
             payload = json.loads(request.payload)
-            tipo = payload.get("tipo")
-            valore = payload.get("valore")
+            tipo = payload.get("t")
+            valore = payload.get("value")
 
             # Gestione dei valori in base al tipo
             if tipo == "solar":
