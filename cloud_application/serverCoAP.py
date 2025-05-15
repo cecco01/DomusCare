@@ -23,8 +23,11 @@ class CoAPServer(CoAP):
         self.db = Database()
         self.connection = self.db.connect_db()
         self.flush_sensor_table()
+#Quando un client CoAP invia una richiesta all’endpoint /register/, il server userà la logica della classe Registration. Se la richiesta va a /control/, userà la logica della classe Control.
         self.add_resource("register/", Registration("Registration"))
         self.add_resource("control/", Control("Control"))
+#"Tutto quello che arriva su /register/ lo gestisce Registration."
+#"Tutto quello che arriva su /control/ lo gestisce Control."
 
     def flush_sensor_table(self):
         """
