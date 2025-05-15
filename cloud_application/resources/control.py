@@ -35,28 +35,33 @@ class Control(Resource):
             # Parsing del payload JSON
             payload = json.loads(request.payload)
             tipo = payload.get("t")
-            valore = payload.get("value")
 
             # Gestione dei valori in base al tipo
             if tipo == "solar":
+                
                 solarpower = valore
                 power = None
                 smartplug = None
+                self.insert_data(solarpower, power, smartplug)
             elif tipo == "power":
+                valore = payload.get("value")
                 solarpower = None
                 power = valore
                 smartplug = None
+                self.insert_data(solarpower, power, smartplug)
             elif tipo == "actuator":
                 solarpower = None
                 power = None
-                smartplug = valore
+                stato= payload.get("stato")
+                nome= payload.get("nome")
+                self.cambia_stato(stato,nome)
             else:
                 self.payload = "Errore: tipo non riconosciuto."
                 print(self.payload)
                 return self
 
             # Inserisci i dati nel database
-            self.insert_data(solarpower, power, smartplug)
+            
             self.payload = "Dati inseriti con successo nella tabella 'data'."
             print(self.payload)
             return self
@@ -68,7 +73,31 @@ class Control(Resource):
             self.payload = f"Errore durante l'inserimento dei dati: {e}"
             print(self.payload)
             return self
+    def cambia_stato(self, nome, stato):
+        """
+        Cambia lo stato di un dispositivo nel database.
 
+        :param nome: Nome del dispositivo.
+        :param stato: Nuovo stato del dispositivo.
+        :param tempo_limite: Tempo limite per il completamento del task.
+        """
+        if not self.connection.is_connected():
+            print("Database connection lost.")
+            return
+
+        try:
+            cursor = self.connection.cursor(stato,nome)
+            query = """
+            UPDATE dispositivi
+            SET stato = %s
+            WHERE nome = %s
+            """
+            cursor.execute(query, (stato, nome))
+            self.connection.commit()
+            cursor.close()
+            print(f"Stato del dispositivo '{nome}' aggiornato a {stato}.")
+        except Error as e:
+            print(f"Errore durante l'aggiornamento dello stato del dispositivo: {e}")
     def insert_data(self, solarpower, power, smartplug):
         """
         Inserisce un nuovo record nella tabella 'data'.

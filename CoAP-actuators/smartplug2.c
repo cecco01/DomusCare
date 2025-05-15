@@ -25,24 +25,28 @@ static int  minuti = 0, giorno = 0, mese = 0, ore = 0;
 static char solar_ip[80] = {0};
 static char power_ip[80] = {0};
 static bool orologio_attivo = false;
+
 static int stato_dispositivo = 0;  // Stato del dispositivo: 0=Spento, 1=Attivo, 2=Pronto
+static int produzione = 0;  // Produzione energetica corrente
+static int consumo = 0;  // Consumo energetico corrente
+static int numero_ripetizioni = 0;  // Dichiarazione globale
+static int tempo_limite = 0;  // Tempo in ore entro il quale il task deve essere completato
 //variabili del dispositivo
 /*
 static char *nome_dispositivo = "Lavatrice";  // Nome del disposit
 static float consumo_dispositivo = 1.5;  // Consumo energetico corrente
 static int durata_task = 60 ;  // Durata del task in secondi
 */
-
 PROCESS(registra_dispositivo_process, "Registra Dispositivo Process");
 PROCESS(disattiva_dispositivo_process, "Disattiva Dispositivo Process");
 PROCESS(smartplug_process, "Smart Plug Process");
+PROCESS(richiedi_dati_sensore_process, "Richiedi Dati Sensore Process");
 
 AUTOSTART_PROCESSES(&smartplug_process);
 
 void disattiva_dispositivo(void);
 void aggiorna_orologio(void);
-
-
+void richiedi_dati_sensore(const char *server_ep, float *dato_ricevuto);
 void client_chunk_handler(coap_message_t *response) {
     const uint8_t *payload = NULL;
     size_t len = coap_get_payload(response, &payload);
@@ -52,9 +56,8 @@ void client_chunk_handler(coap_message_t *response) {
         // ancora da gestire 
     } 
 }
+
 static char json[256];
-
-
 static void res_post_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
     const uint8_t *payload = NULL;
     size_t len = coap_get_payload(request, &payload);
@@ -91,22 +94,22 @@ static void res_post_handler(coap_message_t *request, coap_message_t *response, 
 
         // Parsing manuale del JSON
         if (strstr(json, "\"o\":") != NULL) {
-            sscanf(strstr(json, "\"o\":") + 6, "%d", &ore);
+            sscanf(strstr(json, "\"o\":") + 5, "%d", &ore);
         }
         if (strstr(json, "\"m\":") != NULL) {
-            sscanf(strstr(json, "\"m\":") + 9, "%d", &minuti);
+            sscanf(strstr(json, "\"m\":") + 5, "%d", &minuti);
         }
         if (strstr(json, "\"g\":") != NULL) {
-            sscanf(strstr(json, "\"g\":") + 9, "%d", &giorno);
+            sscanf(strstr(json, "\"g\":") + 5, "%d", &giorno);
         }
         if (strstr(json, "\"h\":") != NULL) {
-            sscanf(strstr(json, "\"h\":") + 7, "%d", &mese);
+            sscanf(strstr(json, "\"h\":") + 5, "%d", &mese);
         }
         if (strstr(json, "\"s\":") != NULL) {
-            sscanf(strstr(json, "\"s\":") + 12, "%63[^\"]", solar_ip);
+            sscanf(strstr(json, "\"s\":") + 6, "%79[^\"]", solar_ip);
         }
         if (strstr(json, "\"p\":") != NULL) {
-            sscanf(strstr(json, "\"p\":") + 12, "%63[^\"]", power_ip);
+            sscanf(strstr(json, "\"p\":") + 6, "%79[^\"]", power_ip);
         }
 
         LOG_INFO("Ora: %d:%d, Data: %d/%d\n", ore, minuti, giorno, mese);
@@ -124,12 +127,123 @@ static void res_post_handler(coap_message_t *request, coap_message_t *response, 
 
     coap_set_status_code(response, CHANGED_2_04);
 }
+void richiedi_dati_sensore(const char *server_ep, float *dato_ricevuto) {
+    process_start(&richiedi_dati_sensore_process, (void *)server_ep);
+}
 
+PROCESS_THREAD(richiedi_dati_sensore_process, ev, data) {
+    PROCESS_BEGIN();
+
+    static coap_endpoint_t server_endpoint;
+    static coap_message_t request[1];
+    float *dato_ricevuto = (float *)data;
+    const char *server_ep = (const char *)data;
+
+    coap_endpoint_parse(server_ep, strlen(server_ep), &server_endpoint);
+    coap_init_message(request, COAP_TYPE_CON, COAP_GET, 0);
+    coap_set_header_uri_path(request, server_ep);
+
+    printf("Richiesta dati al sensore: %s\n", server_ep);
+
+    last_sensor_value_valid = 0;
+    COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
+
+    if (last_sensor_value_valid) {
+        *dato_ricevuto = last_sensor_value;
+        printf("Dati ricevuti dal sensore: %.2f\n", *dato_ricevuto);
+    } else {
+        printf("Errore nella ricezione dei dati dal sensore.\n");
+    }
+
+    PROCESS_END();
+}
+
+void calcola_momento_migliore() {
+    printf("Inizio calcolo del momento migliore per avviare il dispositivo...\n");
+
+    richiedi_dati_sensore(solar_ip, &produzione);
+    richiedi_dati_sensore(power_ip, &consumo);
+    features_produzione[0] = mese;  // Mese
+    features_produzione[1] = giorno;  // Giorno
+    features_produzione[2] = ore;  // Ora
+    features_produzione[3] = produzione;  // Potenza solare (kW)
+    features_consumo[0] = mese;     // Mese
+    features_consumo[1] = giorno;   // Giorno
+    features_consumo[2] = ore;      // Ora
+    features_consumo[3] = consumo;    // Tensione (Volt)
+    float consumo_predetto = model_consumption_regress1(features_produzione, MAX_FEATURES);
+    float produzione_solare_predetta = model_production_regress1(features_produzione, MAX_FEATURES);
+
+    // Controlla se c'è surplus energetico
+    if (produzione_solare_predetta > consumo_predetto + consumo_dispositivo && produzione > consumo) {
+        
+        avvia_dispositivo();
+    } else {
+        printf("Non è stato possibile trovare un momento con surplus energetico entro la prossima ora.\n");
+        printf("Richiedo nuovi dati dai sensori e riprovo tra 15 minuti.\n");
+        numero_ripetizioni++;
+        if(numero_ripetizioni== tempo_limite*4) {
+            printf("Superato il numero massimo di tentativi. Avvio il dispositivo.\n");
+            avvia_dispositivo();
+            return;
+        }
+        // Riprova tra 15 minuti
+        etimer_set(&efficient_timer, INTERVALLO_PREDIZIONE * CLOCK_SECOND);
+    }
+}
+void calcola_momento_migliore();
+void richiedi_dati_sensore(const char *server_ep, float *dato_ricevuto);
+void avvia_dispositivo();
+float model_consumption_regress1(const float *features, int num_features);
+float model_production_regress1(const float *features, int num_features);
+void avvia_dispositivo() {
+    process_start(&avvia_dispositivo_process, NULL);
+}
+void remote_post_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
+    const uint8_t *payload = NULL;
+    int nuovo_stato = 0;
+    size_t len = coap_get_payload(request, &payload);
+    LOG_INFO("POST remoto ricevuto\n");
+    
+    if (payload == NULL || len == 0) {
+        coap_set_status_code(response, BAD_REQUEST_4_00);
+        LOG_ERR("Payload non valido\n");
+        return;
+    }
+    //parse il payload JSON
+    char json[256];
+    if (strstr(json, "\"s\":") != NULL) {
+        sscanf(strstr(json, "\"s\":") + 5, "%d", &nuovo_stato);
+    }
+    if (strstr(json, "\"t\":") != NULL) {
+        sscanf(strstr(json, "\"t\":") + 5, "%d", &tempo_limite);
+    }
+    if (nuovo_stato==2){
+        calcola_momento_migliore();
+    }
+    if (nuovo_stato==0){
+        disattiva_dispositivo();
+    }
+    if (nuovo_stato==1){
+        avvia_dispositivo();
+    }
+    // Gestisci il payload remoto qui
+    // Ad esempio, puoi inviare un messaggio al server o eseguire altre azioni
+
+    coap_set_status_code(response, CHANGED_2_04);
+}
 
 EVENT_RESOURCE(res_smartplug,
                "title=\"Smartplug resource\";actuator",
                NULL,
                res_post_handler,
+               NULL,
+               NULL,
+               NULL);
+EVENT_RESOURCE(remote_smartplug,
+               "title=\"remote_smartplug\";actuator",
+               NULL,
+               remote_post_handler,
                NULL,
                NULL,
                NULL);
@@ -273,6 +387,40 @@ PROCESS_THREAD(disattiva_dispositivo_process, ev, data) {
     COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
 
     printf("Segnale di disattivazione inviato al server con successo.\n");
+
+    PROCESS_END();
+}
+
+PROCESS_THREAD(avvia_dispositivo_process, ev, data) {
+    PROCESS_BEGIN();
+
+    static coap_endpoint_t server_endpoint;
+    static coap_message_t request[1];
+
+    const char *server_url = "coap://[fd00::1]:5683/device_status";  // URL del server
+
+    // Imposta lo stato del dispositivo a 1 (Attivo)
+    stato_dispositivo = 1;
+    printf("Dispositivo avviato. Stato impostato a: %d (Attivo)\n", stato_dispositivo);
+
+    // Configura l'endpoint del server
+    coap_endpoint_parse(server_url, strlen(server_url), &server_endpoint);
+    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
+    coap_set_header_uri_path(request, "Control/");
+
+    // Payload per notificare l'avvio
+    const char *payload = "{ \"t\":\"actuator\",\"stato\": \"1\",\"nome\": \"Lavatrice\"}";
+    coap_set_payload(request, (uint8_t *)payload, strlen(payload));
+    printf("Invio segnale al server: %s\n", payload);
+
+    // Invia la richiesta al server
+    COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
+
+    printf("Segnale di avvio inviato al server con successo.\n");
+
+    // Imposta il timer per disattivare il dispositivo dopo la durata del task
+    etimer_set(&task_timer, durata_task * CLOCK_SECOND);
+    printf("Timer impostato per disattivare il dispositivo dopo %d secondi.\n", durata_task);
 
     PROCESS_END();
 }
