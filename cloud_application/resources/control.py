@@ -38,7 +38,7 @@ class Control(Resource):
 
             # Gestione dei valori in base al tipo
             if tipo == "solar":
-                
+                valore = payload.get("value")
                 solarpower = valore
                 power = None
                 smartplug = None
@@ -52,9 +52,9 @@ class Control(Resource):
             elif tipo == "actuator":
                 solarpower = None
                 power = None
-                stato= payload.get("stato")
-                nome= payload.get("nome")
-                self.cambia_stato(stato,nome)
+                stato = payload.get("stato")
+                nome = payload.get("nome")
+                self.cambia_stato(nome, stato)
             else:
                 self.payload = "Errore: tipo non riconosciuto."
                 print(self.payload)
@@ -86,7 +86,7 @@ class Control(Resource):
             return
 
         try:
-            cursor = self.connection.cursor(stato,nome)
+            cursor = self.connection.cursor()
             query = """
             UPDATE dispositivi
             SET stato = %s
