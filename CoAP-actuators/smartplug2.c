@@ -175,8 +175,7 @@ void client_registration_handler(coap_message_t *response) {
     }
     const uint8_t *payload = NULL;
     size_t len = coap_get_payload(response, &payload);
-    if (len  !=  0) {
-        max_registration_retry = 0;  // Registrazione riuscita, non tentare più
+    if (len  >  0) { // Registrazione riuscita, non tentare più
         LOG_INFO("Registrazione non riuscita\n");
         is_registered = false;
 
