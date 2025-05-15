@@ -88,11 +88,11 @@ void client_registration_handler(coap_message_t *response) {
     }
     size_t len = coap_get_payload(response, &payload);
     if (len > 0) {
-        is_registered = true;
+        is_registered = false;
         printf("Registrazione riuscita: %.*s\n", (int)len, (const char *)payload);
     } else {
-        is_registered = false;
-        number_of_retries++;
+        is_registered = true;
+        number_of_retries++;ttruerue
         printf("Registrazione non riuscita. Tentativo %d \n", number_of_retries);
     }
 }
@@ -447,12 +447,11 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
     if(!is_registered) {
       max_registration_retry--;
       printf("Registrazione non riuscita. Tentativi rimasti: %d\n", max_registration_retry);
-      if(max_registration_retry == 0) {
+      
         printf("Registrazione fallita. Attendo 30 secondi prima di riprovare.\n");
         etimer_set(&sleep_timer, 30 * CLOCK_SECOND);
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&sleep_timer));
-        max_registration_retry = 3;
-      }
+      
     }
   }
 

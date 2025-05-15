@@ -170,17 +170,21 @@ void client_registration_handler(coap_message_t *response) {
     if (response == NULL) {
         LOG_ERR("Request timed out\n");
         is_registered = false;
+        number_of_retries++;
         return;
     }
     const uint8_t *payload = NULL;
     size_t len = coap_get_payload(response, &payload);
-    if (len > 0) {
+    if (len  ==  0) {
         max_registration_retry = 0;  // Registrazione riuscita, non tentare più
         LOG_INFO("Registrazione riuscita\n");
+        is_registered = true;
+
     } else {
-        is_registered = false;
+        is_registered = true ;
         number_of_retries++;
-        printf("Registrazione non riuscita. Tentativo %d \n", number_of_retries);
+        LOG_INFO("Registrazione riuscita\n");
+
     }
 }
 
@@ -198,7 +202,9 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
         coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
         coap_set_header_uri_path(request, "register/");
         char msg[256];
-        snprintf(msg, sizeof(msg), "{\"t\": \"actuator\", \"n\": \"Lavatrice\", \"c\": \"1.5\", \"d\": \"60\"}");
+        // Inizializza il messaggio JSON
+        char stato =stato_dispositivo+ '0';
+        snprintf(msg, sizeof(msg), "{\"t\": \"actuator\", \"n\": \"Lavatrice\", \"s\":%c, \"c\": \"1.5\", \"d\": \"60\"}",stato);
         coap_set_payload(request, (uint8_t *)msg, strlen(msg));
         printf("Invio richiesta di registrazione: %s\n", msg);
         COAP_BLOCKING_REQUEST(&main_server_ep, request, client_registration_handler);

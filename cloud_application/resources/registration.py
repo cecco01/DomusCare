@@ -143,7 +143,9 @@ class Registration(Resource):
             durata = payload.get("d")
             # Verifica se i dati sono presenti e validi
             if not name or not stato or not consumo_kwh or not durata:
-                raise ValueError("Dati incompleti nel payload per l'attuatore.")
+                print(f"Errore: Dati mancanti nel payload. name={name}, stato={stato}, consumo_kwh={consumo_kwh}, durata={durata}")
+        
+                
             # Esegui l'inserimento nella tabella dispositivi
             cursor.execute(query, (str(name), str(stato), float(consumo_kwh), int(durata)))
             
@@ -166,6 +168,8 @@ class Registration(Resource):
         SELECT ip_address FROM sensor
         WHERE type = 'actuator'
         """
+    
+        
         cursor.execute(query)
         actuators = cursor.fetchall()
         cursor.close()

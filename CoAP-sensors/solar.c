@@ -40,13 +40,14 @@ void client_chunk_handler(coap_message_t *response){//
   else{
     const uint8_t *payload = NULL;
     int len = coap_get_payload(response, &payload);
-    if (len > 0 && payload != NULL) {
-        LOG_INFO("Payload: %.*s\n", len, (char *)payload);
-    } else {
-        LOG_ERR("Payload is NULL or empty\n");
+    if (len > 0){
+      printf("Response received: %.*s\n", len, (const char *)payload);
     }
-    LOG_INFO("Registration successful\n");
-    max_registration_retry = 0; // if = 0 --> registration ok!
+    else{
+      LOG_INFO("Registration successful\n");
+    max_registration_retry = 0; // if = 0 --> registration ok
+    }
+    
     return;
   }
 
