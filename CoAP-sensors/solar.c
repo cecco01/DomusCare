@@ -120,9 +120,10 @@ void client_chunk_handler(coap_message_t *response){//
  
      if (ev == PROCESS_EVENT_TIMER && data == &e_timer){
        if (status == 1){
-         res_solar.trigger();//serve un coap client registrato alla risorsa
-         LOG_INFO("res_solar event triggered\n");
-       }
+        // res_solar.trigger();//serve un coap client registrato alla risorsa
+         //LOG_INFO("res_solar event triggered\n");
+          process_start(&post_to_solar_process, NULL);
+        }
        etimer_reset(&e_timer);
  
  #if PLATFORM_HAS_BUTTON

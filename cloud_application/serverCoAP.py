@@ -46,8 +46,10 @@ class CoAPServer(CoAP):
             self.connection.commit()
             cursor.close()
         except Error as e:
-          print("Error flushing sensor table")
+          print("Error flushing sensor table: {e}")
 
     def close(self):
-        
+        if self.connection.is_connected():
+            self.connection.close()
         super(CoAPServer, self).close()
+        # super(CoAPServer, self).close() prima mi limitavo a fare questo senza chiudere la connessioen al db
