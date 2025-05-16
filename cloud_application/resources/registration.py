@@ -134,9 +134,10 @@ class Registration(Resource):
         if sensor_type == "actuator":
 
             query = """
-            INSERT INTO dispositivi (nome, consumo_kwh,durata)
-            VALUES (%s, %s, %s)
+            INSERT INTO dispositivi (ip_address ,nome, consumo_kwh,durata)
+            VALUES (%s, %s, %s, %s)
             """
+
             # Estrai i dati dal payload
             name = payload.get("n")
             consumo_kwh = payload.get("c")
@@ -147,7 +148,7 @@ class Registration(Resource):
 
                 
             # Esegui l'inserimento nella tabella dispositivi
-            cursor.execute(query, (str(name), float(consumo_kwh), int(durata)))
+            cursor.execute(query, (str(ip_address ),str(name), float(consumo_kwh), int(durata)))
             
             self.connection.commit()
             print(f"Registrato il dispositivo di tipo {sensor_type} con indirizzo IP {ip_address}.")

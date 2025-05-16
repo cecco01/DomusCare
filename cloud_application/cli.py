@@ -1,37 +1,70 @@
 from coapthon.client.helperclient import HelperClient
 import json
+from core.database import Database
 
-SERVER_IP = "fd00::1"
-SERVER_PORT = 5683
-
-def mostra_dispositivi():
-    client = HelperClient(server=(SERVER_IP, SERVER_PORT))
+def get_ip_by_name(nome):
+    """
+    Recupera l'indirizzo IP di un dispositivo dato il suo nome.
+    """
     try:
-        response = client.get("control/")
-        if response:
-            dispositivi = json.loads(response.payload)
-            print("Dispositivi:")
-            for dispositivo in dispositivi:
-                nome = dispositivo["nome"]
-                tipo = dispositivo["tipo"]
-                stato = dispositivo["stato"]
-                stato_str = "Attivo" if stato == 1 else "Inattivo" if stato == 0 else "Pronto"
-                print(f"Nome: {nome}, Tipo: {tipo}, Stato: {stato_str}")
+        # Ottieni la connessione al database tramite la classe Database
+        db = Database()
+        conn = db.connect_db()
+        if conn is None:
+            print("Errore: impossibile connettersi al database.")
+            return None
+
+        cursor = conn.cursor(dictionary=True)
+
+        # Esegui la query per ottenere l'indirizzo IP
+        query = "SELECT ip_address FROM dispositivi WHERE nome = %s"
+        cursor.execute(query, (nome,))
+        result = cursor.fetchone()
+
+        # Chiudi il cursore
+        cursor.close()
+
+        if result:
+            return result["ip_address"]
         else:
-            print("Errore nel recupero dei dispositivi.")
+            print(f"Errore: nessun dispositivo trovato con il nome '{nome}'.")
+            return None
     except Exception as e:
-        print(f"Errore nella richiesta CoAP: {e}")
-    finally:
-        client.stop()
+        print(f"Errore durante il recupero dell'indirizzo IP: {e}")
+        return None
 
 def cambia_stato_dispositivo(nome, nuovo_stato, ore=0):
-    client = HelperClient(server=(SERVER_IP, SERVER_PORT))
+    """
+    Cambia lo stato di un dispositivo dato il suo nome.
+    """
+    # Ottieni l'indirizzo IP del dispositivo
+    ip_address = get_ip_by_name(nome)
+    if isinstance(ip_address, str):
+        ip_address = eval(ip_address)  # Converte la stringa in una tupla
+
+    # Estrai l'indirizzo IP e la porta dalla tupla
+    if isinstance(ip_address, tuple) and len(ip_address) == 2:
+        ip, port = ip_address
+    else:
+        raise ValueError(f"Formato non valido per ip_address: {ip_address}")
+
+    if ip_address is None:
+        print(f"Impossibile cambiare lo stato del dispositivo '{nome}'.")
+        return
+
+    client = HelperClient(server=(ip_address, ))
     try:
-        payload = {
-            "nome": nome,
-            "stato": nuovo_stato
-        }
-        response = client.post("control/", json.dumps(payload))
+        if ore=0:
+            payload = {
+                "s": nuovo_stato
+            }
+        else:
+            payload = {
+                "s": nuovo_stato,
+                "t":ore
+            }
+        
+        response = client.post("remote_smartplug/", json.dumps(payload))
         if response and response.code == 68:
             print(f"Stato del dispositivo '{nome}' aggiornato con successo sul server.")
         else:
@@ -42,41 +75,76 @@ def cambia_stato_dispositivo(nome, nuovo_stato, ore=0):
         client.stop()
 
 def rimuovi_dispositivo(nome):
-    client = HelperClient(server=(SERVER_IP, SERVER_PORT))
+   
+    #rimuovi_dispositivo(nome):
+    """
+    Rimuove un dispositivo dal database.
+    """
     try:
-        payload = {"nome": nome}
-        response = client.delete("control/", json.dumps(payload))
-        if response and response.code == 68:
-            print(f"Dispositivo '{nome}' rimosso con successo.")
-        else:
-            print(f"Errore nella rimozione del dispositivo: {response.code if response else 'Nessuna risposta'}")
+        # Ottieni la connessione al database tramite la classe Database
+        db = Database()
+        conn = db.connect_db()
+        if conn is None:
+            print("Errore: impossibile connettersi al database.")
+            return
+
+        cursor = conn.cursor()
+
+        # Esegui la query per rimuovere il dispositivo
+        query = "DELETE FROM dispositivi WHERE nome = %s"
+        cursor.execute(query, (nome,))
+        conn.commit()
+        #rimuovo da sensor
+        get_ip = get_ip_by_name(nome)
+        
+        query = "DELETE FROM sensor WHERE ip = %s"
+        cursor.execute(query, (get_ip,))
+        conn.commit()
+
+
+        # Chiudi il cursore e la connessione
+        cursor.close()
+        conn.close()
+
+        print(f"Dispositivo '{nome}' rimosso con successo dal database.")
     except Exception as e:
-        print(f"Errore nella richiesta CoAP: {e}")
-    finally:
-        client.stop()
+        print(f"Errore durante la rimozione del dispositivo: {e}")
 
 def recupera_lista_attuatori():
-    client = HelperClient(server=(SERVER_IP, SERVER_PORT))
     try:
-        response = client.get("control/?type=actuator")
-        if response:
-            attuatori = json.loads(response.payload)
-            print("Attuatori disponibili:")
-            for attuatore in attuatori:
-                print(f"Nome: {attuatore['nome']}, IP: {attuatore['ip_address']}")
-            return attuatori
-        else:
-            print("Errore nel recupero della lista attuatori.")
-            return []
+        # Ottieni la connessione al database tramite la classe Database
+        db = Database()
+        conn = db.connect_db()
+        if conn is None:
+            print("Errore: impossibile connettersi al database.")
+            return
+
+        cursor = conn.cursor(dictionary=True)
+
+        # Esegui la query per recuperare gli attuatori
+        query = "SELECT nome, stato, consumo_kwh, durata FROM dispositivi"
+        cursor.execute(query)
+        dispositivi = cursor.fetchall()
+
+        # Mostra i dispositivi
+        print("Lista degli attuatori:")
+        for dispositivo in dispositivi:
+            nome = dispositivo["nome"]
+            stato = dispositivo["stato"]
+            consumo = dispositivo["consumo_kwh"]
+            durata = dispositivo["durata"]
+            stato_str = "Attivo" if stato == 1 else "Inattivo" if stato == 0 else "Pronto"
+            print(f"Nome: {nome}, Stato: {stato_str}, Consumo: {consumo} kWh, Durata: {durata} minuti")
+
+
+        # Chiudi il cursore
+        cursor.close()
     except Exception as e:
-        print(f"Errore nella richiesta CoAP: {e}")
-        return []
-    finally:
-        client.stop()
+        print(f"Errore durante il recupero degli attuatori: {e}")
 
 def remote_cli():
     print("Recupero lista attuatori dal server...")
-    recupera_lista_attuatori()
+    
     while True:
         print("\nGestione da terminale:")
         print("1. Mostra dispositivi")
@@ -85,12 +153,15 @@ def remote_cli():
         print("0. Esci")
         scelta = input()
         if scelta == "1":
-            mostra_dispositivi()
+            recupera_lista_attuatori()
         elif scelta == "2":
             nome = input("Inserisci il nome del dispositivo: ")
             nuovo_stato = int(input("Inserisci il nuovo stato (2=Pronto, 1=Attivo, 0=Inattivo): "))
-            ore = int(input("Inserisci entro quante ore deve essere completata la task (se applicabile): ")) if nuovo_stato == 2 else 0
-            cambia_stato_dispositivo(nome, nuovo_stato, ore)
+            if nuovo_stato == 2:
+                ore = int(input("Inserisci entro quante ore deve essere completata la task (se applicabile): ")) if nuovo_stato == 2 else 0
+                cambia_stato_dispositivo(nome, nuovo_stato, ore)
+            else:
+                cambia_stato_dispositivo(nome, nuovo_stato, 0)
         elif scelta == "3":
             nome = input("Inserisci il nome del dispositivo da rimuovere: ")
             rimuovi_dispositivo(nome)
