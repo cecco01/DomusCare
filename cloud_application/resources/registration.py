@@ -43,8 +43,8 @@ class Registration(Resource):
             print(f"Payload ricevuto: {payload}")
             sensor_type = payload.get("t")
             ip_address = request.source #payload.get("ip_address")
-            if sensor_type =="a":
-                sensor_type== "actuator"
+            if sensor_type == "a":
+                sensor_type = "actuator"
             #print(f"Tipo: {sensor_type}, IP: {ip_address}")
 
             if not sensor_type or not ip_address:
