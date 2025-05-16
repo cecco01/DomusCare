@@ -134,8 +134,8 @@ class Control(Resource):
 
         try:
             cursor = self.connection.cursor()
-            query = "INSERT INTO data (solarpower, power, smartplug) VALUES (%s, %s, %s)"
-            cursor.execute(query, (solarpower, power, smartplug))
+            query = "INSERT INTO data (solarpower, power) VALUES (%s, %s)"
+            cursor.execute(query, (solarpower, power))
             self.connection.commit()
             cursor.close()
             print(f"Nuovo record inserito nella tabella 'data': solarpower={solarpower}, power={power}, smartplug={smartplug}")
