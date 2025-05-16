@@ -36,7 +36,8 @@ PROCESS_THREAD(post_to_control_process, ev, data) {
     static coap_message_t request[1];
 
     PROCESS_BEGIN();
-
+    current_power = generate_gaussian(MEAN, STDDEV);
+    LOG_INFO("Power value: %.2f\n", current_power);
     // Imposta la locale numerica su "C"
     setlocale(LC_NUMERIC, "C");
 
@@ -61,7 +62,6 @@ PROCESS_THREAD(post_to_control_process, ev, data) {
 }
 
 void res_power_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
-    current_power = generate_gaussian(MEAN, STDDEV);
-    LOG_INFO("Power value: %.2f\n", current_power);
+    
     process_start(&post_to_control_process, NULL);
 }
