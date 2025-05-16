@@ -19,7 +19,7 @@ void res_solar_get_handler(coap_message_t *request, coap_message_t *response, ui
 
 RESOURCE(res_solar,
   "title=\"Produzione Energeticq\";rt=\"Text\"",
-  res_get_handler,
+  res_solar_get_handler,
   NULL,
   NULL,
   NULL);
@@ -38,7 +38,8 @@ PROCESS_THREAD(post_to_solar_process, ev, data) {
 
     // Configura l'endpoint del server
     coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &control_server_ep);
-
+    current_solarpower = generate_gaussian(MEAN, STDDEV);
+    LOG_INFO("Power value: %.2f\n", current_solarpower);
     // Prepara il messaggio
     coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
     coap_set_header_uri_path(request, "control/");
@@ -47,7 +48,7 @@ PROCESS_THREAD(post_to_solar_process, ev, data) {
     char msg[64];
     snprintf(msg, sizeof(msg), "{\"t\": \"solar\", \"value\": %.2f}", current_solarpower);
     coap_set_payload(request, (uint8_t *)msg, strlen(msg));
-
+    
     LOG_INFO("Invio POST alla risorsa control: %s\n", msg);
 
     // Invia la richiesta
@@ -56,9 +57,13 @@ PROCESS_THREAD(post_to_solar_process, ev, data) {
     PROCESS_END();
 }
 
+void res_solar_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
+    // Genera un payload JSON con il valore corrente di current_solarpower
+    int length = snprintf((char *)buffer, preferred_size, "{\"solar_power\": %.2f}", current_solarpower);
 
-void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
-    current_solarpower = generate_gaussian(MEAN, STDDEV);
-    LOG_INFO("Power value: %.2f\n", current_solarpower);
-    process_start(&post_to_solar_process, NULL);
+    // Imposta il payload nella risposta
+    coap_set_payload(response, buffer, length);
+
+    LOG_INFO("Risposta GET inviata: %s\n", buffer);
 }
+
