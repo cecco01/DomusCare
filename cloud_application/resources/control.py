@@ -55,9 +55,11 @@ class Control(Resource):
         :param request: Richiesta CoAP ricevuta.
         :return: Risposta CoAP con il risultato dell'operazione.
         """
+        print(f"CONTROL: RENDER POST ")
         try:
-            # Parsing del payload JSON
+                # Parsing del payload JSON
             payload = json.loads(request.payload)
+            print(f"payload ricevuto:{payload}")
             tipo = payload.get("t")
 
             # Gestione dei valori in base al tipo

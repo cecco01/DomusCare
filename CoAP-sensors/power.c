@@ -93,7 +93,7 @@ void client_chunk_handler(coap_message_t *response){//
    LOG_INFO("REGISTRATION SUCCESS\n");
    leds_single_off(LEDS_YELLOW);
  
-   etimer_set(&e_timer, CLOCK_SECOND * 300);//RICORDA DI CAMBIARE IL TIMER
+   etimer_set(&e_timer, CLOCK_SECOND * 10);//RICORDA DI CAMBIARE IL TIMER
  
    while (1){
      PROCESS_WAIT_EVENT();
