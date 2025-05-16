@@ -17,17 +17,21 @@ class Registration(Resource):
         self.database = Database()
         self.connection = self.database.connect_db()
 
+    def ensure_connection(self):
+        """
+        Verifica e ripristina la connessione al database se necessario.
+        """
+        if not self.connection.is_connected():
+            print("Connessione al database persa. Riconnessione in corso...")
+            self.connection = self.database.connect_db()
+            if not self.connection.is_connected():
+                raise Error("Impossibile riconnettersi al database.")
+
     def render_GET(self, request):
         print(f"RENDER GET")
-        # Print parameters of the request
-        
         print(f"Request parameters: {request.uri_query}")
-    
-        # Take the value of the query parameter
         query = request.uri_query
-
         self.fetch_sensor_from_db(query)
-
         return self
 
     def render_POST(self, request):
@@ -36,27 +40,21 @@ class Registration(Resource):
         invia un messaggio CoAP al dispositivo Smart Plug con data e ora.
         """
         print(f"RENDER POST - Request parameters: {request.uri_query}")
-        
         try:
-            # Parsing del payload JSON
             payload = json.loads(request.payload)
             print(f"Payload ricevuto: {payload}")
             sensor_type = payload.get("t")
-            ip_address = request.source #payload.get("ip_address")
+            ip_address = request.source
             if sensor_type == "a":
                 sensor_type = "actuator"
-            #print(f"Tipo: {sensor_type}, IP: {ip_address}")
 
             if not sensor_type or not ip_address:
                 print("Tipo o indirizzo IP mancante.")
                 self.payload = "Errore: tipo o indirizzo IP mancante."
                 return self
 
-            # Inserisce il sensore nel database
-            #print(f"tipo: {sensor_type}, ip_address: {ip_address}")
             self.register_sensor(sensor_type, ip_address, payload)
 
-            # Se il tipo è 'actuator', invia un messaggio CoAP al dispositivo Smart Plug
             if sensor_type == "actuator":
                 self.send_activation_message(ip_address)
 
@@ -71,12 +69,9 @@ class Registration(Resource):
             return self
 
     def fetch_sensor_from_db(self, type):
-        if not self.connection.is_connected():
-            self.payload = None
-            print("Database connection lost, Payload: None")
-            return self
- 
+        cursor = None
         try:
+            self.ensure_connection()
             cursor = self.connection.cursor()
             select_sensor_query = """
             SELECT ip_address, type
@@ -84,109 +79,91 @@ class Registration(Resource):
             WHERE type = %s
             """
             cursor.execute(select_sensor_query, (type,))
-
             sensor_data = cursor.fetchall()
-            cursor.close()
 
             sensor = {}
-
             if sensor_data:
                 for row in sensor_data:
                     ip_address, type = row
                     sensor[type] = {"ip_address": ip_address}
-
-                
                     response = {
                         "sensor": type,
                         "ip_address": sensor[type]["ip_address"]
                     }
                     self.payload = json.dumps(response, separators=(',', ':'))
                     print(f"Payload: {self.payload}")
-
             else:
                 self.payload = None
                 print(f"No sensor found for type: {type}. Payload: {self.payload}")
-        
         except Error as e:
             self.payload = None
             print(f"Error retrieving sensor data: {e}, Payload: {self.payload}")
+        finally:
+            if cursor:
+                cursor.close()
 
     def register_sensor(self, sensor_type, ip_address, payload):
-        """
-        Registra un sensore nel database e invia un messaggio agli attuatori non attivi.
-
-        :param sensor_type: Tipo del sensore.
-        :param ip_address: Indirizzo IP del sensore.
-        :param payload: Dati JSON ricevuti per il sensore.
-        """
-        if not self.connection.is_connected():
-            raise Error("Connessione al database persa.")
-        #print(f'Creo il cursore, ip_address: {ip_address}, sensor_type: {sensor_type}')
-        cursor = self.connection.cursor()
-        query = """
-        INSERT INTO sensor (type, ip_address)
-        VALUES (%s, %s)
-        """
-        cursor.execute(query, (str(sensor_type), str(ip_address)))
-        self.connection.commit()
-        print(f"Registrato il sensore di tipo {sensor_type} con indirizzo IP {ip_address}.")
-        # Se il sensore è un actuator, aggiungilo anche nella tabella dispositivi
-        if sensor_type == "actuator":
-
+        cursor = None
+        try:
+            self.ensure_connection()
+            cursor = self.connection.cursor()
             query = """
-            INSERT INTO dispositivi (ip_address ,nome, consumo_kwh,durata)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO sensor (type, ip_address)
+            VALUES (%s, %s)
             """
-
-            # Estrai i dati dal payload
-            name = payload.get("n")
-            consumo_kwh = payload.get("c")
-            durata = payload.get("d")
-            # Verifica se i dati sono presenti e validi
-            if not name or not consumo_kwh or not durata:
-                print(f"Errore: Dati mancanti nel payload. name={name}, consumo_kwh={consumo_kwh}, durata={durata}")
-
-                
-            # Esegui l'inserimento nella tabella dispositivi
-            cursor.execute(query, (str(ip_address ),str(name), float(consumo_kwh), int(durata)))
-            
+            cursor.execute(query, (str(sensor_type), str(ip_address)))
             self.connection.commit()
-            print(f"Registrato il dispositivo di tipo {sensor_type} con indirizzo IP {ip_address}.")
+            print(f"Registrato il sensore di tipo {sensor_type} con indirizzo IP {ip_address}.")
 
-        # Invia il messaggio agli attuatori non attivi
-        if sensor_type in ["solar", "power"]:
-            self.notify_actuators()
+            if sensor_type == "actuator":
+                query = """
+                INSERT INTO dispositivi (ip_address, nome, consumo_kwh, durata)
+                VALUES (%s, %s, %s, %s)
+                """
+                name = payload.get("n")
+                consumo_kwh = payload.get("c")
+                durata = payload.get("d")
+                if not name or not consumo_kwh or not durata:
+                    print(f"Errore: Dati mancanti nel payload. name={name}, consumo_kwh={consumo_kwh}, durata={durata}")
+                cursor.execute(query, (str(ip_address), str(name), float(consumo_kwh), int(durata)))
+                self.connection.commit()
+                print(f"Registrato il dispositivo di tipo {sensor_type} con indirizzo IP {ip_address}.")
+            if sensor_type in ["solar", "power"]:
+                self.notify_actuators()
+        except Error as e:
+            print(f"Errore durante la registrazione del sensore: {e}")
+        finally:
+            if cursor:
+                cursor.close()
 
     def notify_actuators(self):
-        """
-        Recupera gli attuatori non attivi dal database e invia loro un messaggio di attivazione.
-        """
-        if not self.connection.is_connected():
-            raise Error("Connessione al database persa.")
+        cursor = None
+        try:
+            self.ensure_connection()
+            cursor = self.connection.cursor()
+            query = """
+            SELECT ip_address FROM sensor
+            WHERE type = 'actuator'
+            """
+            cursor.execute(query)
+            actuators = cursor.fetchall()
 
-        cursor = self.connection.cursor()
-        query = """
-        SELECT ip_address FROM sensor
-        WHERE type = 'actuator'
-        """
-    
-        
-        cursor.execute(query)
-        actuators = cursor.fetchall()
-        cursor.close()
-
-        for actuator in actuators:
-            actuator_ip = actuator[0]
-            self.send_activation_message(actuator_ip)
+            for actuator in actuators:
+                actuator_ip = actuator[0]
+                self.send_activation_message(actuator_ip)
+        except Error as e:
+            print(f"Errore durante la notifica degli attuatori: {e}")
+        finally:
+            if cursor:
+                cursor.close()
 
     def send_activation_message(self, ip_address):
-        client = None  # Inizializza la variabile client
+        client = None
+        cursor = None
         try:
-            # Se ip_address è una stringa, convertila in una tupla
             if isinstance(ip_address, str):
-                ip_address = eval(ip_address)  # Converte la stringa in una tupla
+                ip_address = eval(ip_address)
 
-            # Estrai l'indirizzo IP e la porta dalla tupla
             if isinstance(ip_address, tuple) and len(ip_address) == 2:
                 ip, port = ip_address
             else:
@@ -194,7 +171,7 @@ class Registration(Resource):
 
             print(f"Invio messaggio di attivazione al dispositivo con IP: {ip} e porta: {port}")
 
-            # Recupera gli indirizzi IP di solar e power dal database
+            self.ensure_connection()
             cursor = self.connection.cursor()
             query = """
             SELECT type, ip_address FROM sensor
@@ -202,37 +179,26 @@ class Registration(Resource):
             """
             cursor.execute(query)
             sensors = cursor.fetchall()
-            cursor.close()
 
-            # Inizializza le variabili per gli IP
             solar_ip = ""
             power_ip = ""
 
-            # Assegna gli indirizzi IP in base al tipo
             for sensor_type, ip_port in sensors:
-                #faccio come sopra
                 if isinstance(ip_port, str):
-                    ip_port = eval(ip_port) 
-                
-                if isinstance(ip_port, tuple) and len(ip_port) == 2:  # Verifica che ip_port sia una tupla valida
+                    ip_port = eval(ip_port)
+                if isinstance(ip_port, tuple) and len(ip_port) == 2:
                     sensor_ip, sensor_port = ip_port
-                    formatted_ip = f"coap://[{sensor_ip}]:{sensor_port}"  # Formatta l'indirizzo IP e la porta
+                    formatted_ip = f"coap://[{sensor_ip}]:{sensor_port}"
                     if sensor_type == "solar":
                         solar_ip = formatted_ip
                         print(f"Solar IP: {solar_ip}")
                     elif sensor_type == "power":
                         power_ip = formatted_ip
                         print(f"Power IP: {power_ip}")
-                else:
-                    print(f"Formato non valido per ip_port: {ip_port}")
 
-            # Log degli indirizzi IP (anche se vuoti)
-            print(f"INVIO DEGLI INDIRIZII : Indirizzo IP Solar: {solar_ip}, Indirizzo IP Power: {power_ip}")
+            print(f"INVIO DEGLI INDIRIZZI: Solar: {solar_ip}, Power: {power_ip}")
 
-            # Crea il client CoAP
             client = HelperClient(server=(ip, port))
-
-            # Costruisci il payload
             payload = {
                 "o": datetime.now().hour,
                 "m": datetime.now().minute,
@@ -241,22 +207,13 @@ class Registration(Resource):
                 "s": solar_ip,
                 "p": power_ip
             }
-            print(f"Payload da inviare: {payload}")
-
-            # Aggiungi "/end/" al payload
             payload_json = json.dumps(payload) + "/end/"
             print(f"Payload con /end/: {payload_json}")
 
-            # Lunghezza in byte
-            payload_length = len(payload_json.encode('utf-8'))
-            print(f"LUNGHEZZA: {payload_length} bytes")
-
-            # Suddividi il payload in blocchi di 64 byte
             payload_bytes = payload_json.encode('utf-8')
             block_size = 64
             blocks = [payload_bytes[i:i + block_size] for i in range(0, len(payload_bytes), block_size)]
 
-            # Invia i blocchi uno alla volta
             for i, block in enumerate(blocks):
                 print(f"Inviando blocco {i + 1}/{len(blocks)}: {block.decode('utf-8', errors='ignore')}")
                 response = client.post("smartplug", block, timeout=10)
@@ -265,10 +222,11 @@ class Registration(Resource):
                 else:
                     print(f"Errore durante l'invio del blocco {i + 1}.")
                     break
-
         except Exception as e:
             print(f"Errore durante l'invio del messaggio CoAP: {e}")
         finally:
+            if cursor:
+                cursor.close()
             if client:
                 client.stop()
 

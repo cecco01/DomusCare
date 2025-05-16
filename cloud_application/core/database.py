@@ -28,8 +28,7 @@ class Database:
                                                 password= self.credentials["MYSQL_PASSWORD"],
                                                 database= self.credentials["MYSQL_DATABASE"])
                 
-                if self.connection.is_connected():
-                    print("Connected to MySQL database")
+                
                 
                 return self.connection
             

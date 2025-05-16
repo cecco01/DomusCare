@@ -64,7 +64,7 @@ def cambia_stato_dispositivo(nome, nuovo_stato, ore=0):
                 "t":ore
             }
         
-        print(f"Payload inviato: {json.dumps(payload)} a : {ip}:{port}")
+        #print(f"Payload inviato: {json.dumps(payload)} a : {ip}:{port}")
         response = client.post("remote_smartplug", json.dumps(payload))
         if response and response.code == 68:
             print(f"Stato del dispositivo '{nome}' aggiornato con successo sul server.")
@@ -143,28 +143,30 @@ def recupera_lista_attuatori():
     except Exception as e:
         print(f"Errore durante il recupero degli attuatori: {e}")
 
-def remote_cli():
-    print("Recupero lista attuatori dal server...")
-    
+def remote_cli():    
     while True:
         print("\nGestione da terminale:")
         print("1. Mostra dispositivi")
         print("2. Cambia stato dispositivo")
         print("3. Rimuovi dispositivo")
         print("0. Esci")
-        scelta = input()
+        scelta = input().strip()  # Rimuove eventuali spazi o caratteri di nuova riga
+
+        if not scelta:  # Controlla se l'input è vuoto
+            continue  # Ignora l'input vuoto e ripeti il ciclo
+
         if scelta == "1":
             recupera_lista_attuatori()
         elif scelta == "2":
-            nome = input("Inserisci il nome del dispositivo: ")
-            nuovo_stato = int(input("Inserisci il nuovo stato (2=Pronto, 1=Attivo, 0=Inattivo): "))
+            nome = input("Inserisci il nome del dispositivo: ").strip()
+            nuovo_stato = int(input("Inserisci il nuovo stato (2=Pronto, 1=Attivo, 0=Inattivo): ").strip())
             if nuovo_stato == 2:
-                ore = int(input("Inserisci entro quante ore deve essere completata la task (se applicabile): ")) if nuovo_stato == 2 else 0
+                ore = int(input("Inserisci entro quante ore deve essere completata la task (se applicabile): ").strip()) if nuovo_stato == 2 else 0
                 cambia_stato_dispositivo(nome, nuovo_stato, ore)
             else:
                 cambia_stato_dispositivo(nome, nuovo_stato, 0)
         elif scelta == "3":
-            nome = input("Inserisci il nome del dispositivo da rimuovere: ")
+            nome = input("Inserisci il nome del dispositivo da rimuovere: ").strip()
             rimuovi_dispositivo(nome)
         elif scelta == "0":
             print("Uscita...")

@@ -51,7 +51,7 @@ void client_chunk_handler(coap_message_t *response){//
  
  static struct etimer e_timer, sleep_timer;
 
- static int sampling_intervals[] = {10, 50, 100}; // varie velocità
+ static int sampling_intervals[] = {30, 50, 100}; // varie velocità
  static int current_sampling_index = 0; // Indice per la velocità di campionamento
  
  void update_led_color() {

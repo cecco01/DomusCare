@@ -58,7 +58,7 @@ void client_chunk_handler(coap_message_t *response){//
  extern coap_resource_t res_solar;
  extern void res_solar_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
-static int sampling_intervals[] = {10, 50, 100}; // varie velocità
+static int sampling_intervals[] = {30, 50, 100}; // varie velocità
  static int current_sampling_index = 0; // Indice per la velocità di campionamento
  
  void update_led_color() {
@@ -118,14 +118,13 @@ static int sampling_intervals[] = {10, 50, 100}; // varie velocità
    LOG_INFO("REGISTRATION SUCCESS\n");
    leds_single_off(LEDS_YELLOW);
  
-   etimer_set(&e_timer, CLOCK_SECOND * 30);
+  // etimer_set(&e_timer, CLOCK_SECOND * 30);
 
    update_led_color();
    etimer_set(&e_timer, CLOCK_SECOND * sampling_intervals[current_sampling_index]);
  
    while (1){
      PROCESS_WAIT_EVENT();
- 
      if (ev == PROCESS_EVENT_TIMER && data == &e_timer){
        if (status == 1){
         // res_solar.trigger();//serve un coap client registrato alla risorsa

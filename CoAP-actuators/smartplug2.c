@@ -203,10 +203,8 @@ void res_post_handler(coap_message_t *request, coap_message_t *response, uint8_t
         LOG_INFO("Ora: %d:%d, Data: %d/%d\n", ore, minuti, giorno, mese);
         LOG_INFO("Solar IP: %s\n", solar_ip);
         LOG_INFO("Power IP: %s\n", power_ip);
-
+        
         orologio_attivo = true;
-
-        etimer_set(&clock_timer, 60 * CLOCK_SECOND);
         
         //attiva la risorsa remota 
         coap_activate_resource(&remote_smartplug, "remote_smartplug");
@@ -278,7 +276,7 @@ void calcola_momento_migliore() {
 }
 void calcola_momento_migliore();
 void richiedi_dati_sensore(const char *server_ep);
-
+static bool task_timer_started = false;
 float model_consumption_regress1(const float *features, int num_features);
 float model_production_regress1(const float *features, int num_features);
 void avvia_dispositivo() {
@@ -302,12 +300,28 @@ PROCESS_THREAD(smartplug_process, ev, data) {
     // Avvio risorsa
     coap_activate_resource(&smartplug, "smartplug");
 
+
+    etimer_set(&clock_timer, 60 * CLOCK_SECOND);
     while (1) {
+        LOG_INFO("In attesa di eventi...\n");
         PROCESS_WAIT_EVENT();
+        LOG_INFO("Evento ricevuto\n");
 
         if (etimer_expired(&clock_timer)) {
+            LOG_INFO("Timer scaduto, aggiornamento orologio...\n");
             aggiorna_orologio();
+            etimer_reset(&clock_timer);
         } 
+        
+        if (task_timer_started && etimer_expired(&task_timer)) {
+            LOG_INFO("Task timer scaduto, disattivazione dispositivo...\n");
+            disattiva_dispositivo();
+            etimer_stop(&task_timer);
+            task_timer_started = false; // Resetta lo stato del timer
+        }
+
+        // Gestione del timer a intervallo fisso
+        
     }
 
     PROCESS_END();
@@ -319,6 +333,7 @@ void disattiva_dispositivo(void) {
 
 void aggiorna_orologio(void) {
     if (orologio_attivo) {
+        LOG_INFO("Aggiornamento orologio in corso...\n");
         minuti += 1;
         if (minuti >= 60) {
             minuti = 0;
@@ -337,10 +352,8 @@ void aggiorna_orologio(void) {
                 }
             }
         }
-        LOG_INFO("Orologio aggiornato: %02d:%02d, Giorno: %02d, Mese: %02d\n", ore, minuti, giorno, mese);
-        etimer_reset(&clock_timer);
-        etimer_set(&clock_timer, 60 * CLOCK_SECOND);  // Aggiorna ogni minuto
-    }
+        Log_info("Orologio aggiornato: %02d:%02d, Giorno: %02d, Mese: %02d\n", ore, minuti, giorno, mese);
+    } 
 }
 
 void client_registration_handler(coap_message_t *response) {
@@ -406,20 +419,19 @@ PROCESS_THREAD(disattiva_dispositivo_process, ev, data) {
 
     static coap_endpoint_t server_endpoint;
     static coap_message_t request[1];
-
-    const char *server_url = "coap://[fd00::1]:5683/device_status";  // URL del server
+  
 
     // Imposta lo stato del dispositivo a 0 (Spento)
     stato_dispositivo = 0;
     printf("Dispositivo disattivato. Stato impostato a: %d (Spento)\n", stato_dispositivo);
 
     // Configura l'endpoint del server
-    coap_endpoint_parse(server_url, strlen(server_url), &server_endpoint);
+    coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &server_endpoint);
     coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
-    coap_set_header_uri_path(request, "device_status");
+    coap_set_header_uri_path(request, "control/");
 
     // Payload per notificare la disattivazione
-    const char *payload = "{\"status\": \"off\"}";
+    const char *payload = "{\"t\":\"actuator\" , \"stato\": \"0\"}";
     coap_set_payload(request, (uint8_t *)payload, strlen(payload));
 
     printf("Invio segnale al server: %s\n", payload);
@@ -458,7 +470,8 @@ PROCESS_THREAD(avvia_dispositivo_process, ev, data) {
     printf("Segnale di avvio inviato al server con successo.\n");
 
     // Imposta il timer per disattivare il dispositivo dopo la durata del task
-    etimer_set(&task_timer, durata_task * 60 *CLOCK_SECOND);
+    etimer_set(&task_timer, durata_task  *CLOCK_SECOND);//rimuovo il *60 per TESting
+    task_timer_started = true; // Indica che il timer è stato avviato
     printf("Timer impostato per disattivare il dispositivo dopo %d minuti.\n", durata_task);
 
     PROCESS_END();
