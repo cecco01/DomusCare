@@ -16,7 +16,7 @@
 #define MEAN 169.970005 // VALORI ANCORA DA STABILIRE
 #define STDDEV 14.283898 // VALORI ANCORA DA STABILIRE
 
-void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
+void res_power_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
 RESOURCE(res_power,
          "title=\"Power resource\";rt=\"power\"",
@@ -25,16 +25,9 @@ RESOURCE(res_power,
          NULL,
          NULL);
 
+static double current_power = 0; // Memorizza l'ultimo valore generato
+
 PROCESS(post_to_control_process, "Post to Control Process");
-
-static double current_solarpower = 0; // Memorizza l'ultimo valore generato
-
-void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
-
-    current_solarpower = generate_gaussian(MEAN, STDDEV);
-    LOG_INFO("Power value: %.2f\n", current_solarpower);
-    process_start(&post_to_control_process, NULL);
-}
 
 
 PROCESS_THREAD(post_to_control_process, ev, data) {
@@ -65,4 +58,10 @@ PROCESS_THREAD(post_to_control_process, ev, data) {
     COAP_BLOCKING_REQUEST(&control_server_ep, request, NULL);
 
     PROCESS_END();
+}
+
+void res_power_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
+    current_power = generate_gaussian(MEAN, STDDEV);
+    LOG_INFO("Power value: %.2f\n", current_power);
+    process_start(&post_to_control_process, NULL);
 }

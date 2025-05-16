@@ -15,9 +15,14 @@
 #define MEAN 169.970005 // VALORI ANCORA DA STABILIRE
 #define STDDEV 14.283898 // VALORI ANCORA DA STABILIRE
 
-void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
+void res_solar_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
-
+RESOURCE(res_solar,
+  "title=\"Produzione Energeticq\";rt=\"Text\"",
+  res_get_handler,
+  NULL,
+  NULL,
+  NULL);
 
 static double current_solarpower = 0; // Memorizza l'ultimo valore generato
 
@@ -52,3 +57,8 @@ PROCESS_THREAD(post_to_solar_process, ev, data) {
 }
 
 
+void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
+    current_solarpower = generate_gaussian(MEAN, STDDEV);
+    LOG_INFO("Power value: %.2f\n", current_solarpower);
+    process_start(&post_to_solar_process, NULL);
+}

@@ -23,14 +23,9 @@
 #define MAX_REGISTRATION_RETRY 3
 
 static int max_registration_retry = MAX_REGISTRATION_RETRY;
-extern void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
+
 extern struct process post_to_solar_process;
-RESOURCE(res_solar,
-  "title=\"Produzione Energeticq\";rt=\"Text\"",
-  res_get_handler,
-  NULL,
-  NULL,
-  NULL);
+
 
 void client_chunk_handler(coap_message_t *response){//
   if (response == NULL){
@@ -60,7 +55,9 @@ void client_chunk_handler(coap_message_t *response){//
  * Resources to be activated need to be imported through the extern keyword.
  * The build system automatically compiles the resources in the corresponding sub-directory.
  */
- 
+ extern coap_resource_t res_solar;
+ extern void res_solar_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
+
  static struct etimer e_timer, sleep_timer;
  
  PROCESS(SolarPw_server, "SolarPw Sensor CoAP Server");
@@ -78,7 +75,7 @@ void client_chunk_handler(coap_message_t *response){//
  #if !PLATFORM_SUPPORTS_BUTTON_HAL
    SENSORS_ACTIVATE(button_sensor);
  #endif
-   printf("Press a button to switch the SolarPw status\n");
+   printf("Press a button to... fare cosa?\n");
  #endif
  
    LOG_INFO("Starting SolarPw Server\n");
@@ -89,12 +86,12 @@ void client_chunk_handler(coap_message_t *response){//
      // Populate the coap_endpoint_t data structure
      coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &main_server_ep);
      // Prepare the message
-    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
+     coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
      coap_set_header_uri_path(request, "register/");//ricontrolla se register va bene...
      // During registration, send the IP address of the solar sensor
      const char msg[] = "{\"t\": \"solar\"}";
      // Set payload
-     coap_set_payload(request, (uint8_t *)msg, strlen(msg));
+     coap_set_payload(request, (uint8_t *)msg, sizeof(msg) - 1);//se non va bene prova strlen(msg)
  
      leds_single_on(LEDS_YELLOW);
  
@@ -133,7 +130,8 @@ void client_chunk_handler(coap_message_t *response){//
      }
      else if (ev == sensors_event && data == &button_sensor){
  #endif
- 
+ //NB: cosa avverrà se il puntante viene premuto è da rivedere visto che abbiamo abolito lo "status"!!! 
+ //Vediamo come gestire questa parte relativa alla variabile status ma sopratutto al bottone!!
        LOG_INFO("Button pressed: switch the SolarPw status from %d to %d\n", status, !status);
  
        status = !status;

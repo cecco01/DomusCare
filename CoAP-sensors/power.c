@@ -16,11 +16,15 @@
 #include "sys/log.h"
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_APP
+
 #define SERVER_EP "coap://[fd00::1]:5683"
+
 #define MAX_REGISTRATION_RETRY 3
 
 static int max_registration_retry = MAX_REGISTRATION_RETRY;
+
 extern struct process post_to_control_process;
+
 void client_chunk_handler(coap_message_t *response){//
   if (response == NULL){
     LOG_ERR("Request timed out\n");
@@ -47,12 +51,12 @@ void client_chunk_handler(coap_message_t *response){//
  
  static struct etimer e_timer, sleep_timer;
  
- PROCESS(power_server, "Power Sensor CoAP Server");
- AUTOSTART_PROCESSES(&power_server);
+ PROCESS(Power_server, "Power Sensor CoAP Server");
+ AUTOSTART_PROCESSES(&Power_server);
  
  int status = 1;
  
- PROCESS_THREAD(power_server, ev, data){
+ PROCESS_THREAD(Power_server, ev, data){
    static coap_endpoint_t main_server_ep;
    static coap_message_t request[1];
  
@@ -62,7 +66,7 @@ void client_chunk_handler(coap_message_t *response){//
  #if !PLATFORM_SUPPORTS_BUTTON_HAL
    SENSORS_ACTIVATE(button_sensor);
  #endif
-   printf("Press a button to switch the power status\n");
+   printf("Press a button to...fare cosa?\n");
  #endif
  
    LOG_INFO("Starting power Server\n");
@@ -76,6 +80,7 @@ void client_chunk_handler(coap_message_t *response){//
      coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
      coap_set_header_uri_path(request, "register/");//ricontrolla se register va bene
      const char msg[] = "{\"t\": \"power\"}";
+
      coap_set_payload(request, (uint8_t *)msg, sizeof(msg) - 1);
  
      leds_single_on(LEDS_YELLOW);
@@ -93,7 +98,7 @@ void client_chunk_handler(coap_message_t *response){//
    LOG_INFO("REGISTRATION SUCCESS\n");
    leds_single_off(LEDS_YELLOW);
  
-   etimer_set(&e_timer, CLOCK_SECOND * 10);//RICORDA DI CAMBIARE IL TIMER
+   etimer_set(&e_timer, CLOCK_SECOND * 310);//RICORDA DI CAMBIARE IL TIMER!!!
  
    while (1){
      PROCESS_WAIT_EVENT();
@@ -114,7 +119,8 @@ void client_chunk_handler(coap_message_t *response){//
      }
      else if (ev == sensors_event && data == &button_sensor){
  #endif
- 
+ //NB: cosa avverrà se il puntante viene premuto è da rivedere visto che abbiamo abolito lo "status"!!!
+//Vediamo come gestire questa parte relativa alla variabile status ma sopratutto al bottone!!
        LOG_INFO("Button pressed: switch the power status from %d to %d\n", status, !status);
  
        status = !status;
