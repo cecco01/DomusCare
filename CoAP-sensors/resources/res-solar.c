@@ -16,7 +16,19 @@
 #define STDDEV 14.283898 // VALORI ANCORA DA STABILIRE
 
 void res_solar_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
-
+void s_handle(coap_message_t *response) {
+  if (response == NULL) {
+      LOG_ERR("Request timed out\n");
+  } else {
+      const uint8_t *payload = NULL;
+      int len = coap_get_payload(response, &payload);
+      if (len > 0) {
+          printf("Response received: %.*s\n", len, (const char *)payload);
+      } else {
+          LOG_INFO("Dati inviati con successo\n");
+      }
+  }
+}
 RESOURCE(res_solar,
   "title=\"Produzione Energeticq\";rt=\"Text\"",
   res_solar_get_handler,
@@ -52,7 +64,7 @@ PROCESS_THREAD(post_to_solar_process, ev, data) {
     LOG_INFO("Invio POST alla risorsa control: %s\n", msg);
 
     // Invia la richiesta
-    COAP_BLOCKING_REQUEST(&control_server_ep, request, NULL);
+    COAP_BLOCKING_REQUEST(&control_server_ep, request, s_handle);
 
     PROCESS_END();
 }
