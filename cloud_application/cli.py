@@ -52,9 +52,9 @@ def cambia_stato_dispositivo(nome, nuovo_stato, ore=0):
         print(f"Impossibile cambiare lo stato del dispositivo '{nome}'.")
         return
 
-    client = HelperClient(server=(ip_address, ))
+    client = HelperClient(server=(ip,port ))
     try:
-        if ore=0:
+        if ore==0:
             payload = {
                 "s": nuovo_stato
             }
@@ -64,7 +64,8 @@ def cambia_stato_dispositivo(nome, nuovo_stato, ore=0):
                 "t":ore
             }
         
-        response = client.post("remote_smartplug/", json.dumps(payload))
+        print(f"Payload inviato: {json.dumps(payload)} a : {ip}:{port}")
+        response = client.post("remote_smartplug", json.dumps(payload))
         if response and response.code == 68:
             print(f"Stato del dispositivo '{nome}' aggiornato con successo sul server.")
         else:
@@ -127,7 +128,7 @@ def recupera_lista_attuatori():
         dispositivi = cursor.fetchall()
 
         # Mostra i dispositivi
-        print("Lista degli attuatori:")
+        print("Lista dei dispositivi:")
         for dispositivo in dispositivi:
             nome = dispositivo["nome"]
             stato = dispositivo["stato"]

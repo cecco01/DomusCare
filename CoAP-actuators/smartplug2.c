@@ -55,14 +55,19 @@ AUTOSTART_PROCESSES(&smartplug_process);
 void avvia_dispositivo();
 void disattiva_dispositivo(void);
 void aggiorna_orologio(void);
+void calcola_momento_migliore();
+void client_registration_handler(coap_message_t *response);
+void remote_post_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
+void sensor_handler(coap_message_t *request);
+void res_post_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
+
 void richiedi_dati_sensore(const char *server_ep);
 void client_chunk_handler(coap_message_t *response) {
     const uint8_t *payload = NULL;
     size_t len = coap_get_payload(response, &payload);
     
     if (len > 0) {
-        printf("Risposta ricevuta: %.*s\n", (int)len, (const char *)payload);
-        // ancora da gestire 
+        printf("Dispositivo aggiornato con successo \n");
     } 
 }
 void sensor_handler(coap_message_t *request) {
@@ -87,11 +92,64 @@ void sensor_handler(coap_message_t *request) {
         }
     }
 }
+void remote_post_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
+    const uint8_t *payload = NULL;
+    int nuovo_stato = 0;
+    size_t len = coap_get_payload(request, &payload);
+    LOG_INFO("POST remoto ricevuto\n");
+    LOG_INFO("Payload: %.*s\n", (int)len, (const char *)payload);
+    
+    if (payload == NULL || len == 0) {
+        coap_set_status_code(response, BAD_REQUEST_4_00);
+        LOG_ERR("Payload non valido\n");
+        return;
+    }
+
+    // Copia il payload nel buffer json
+    char json[256];
+    if (len >= sizeof(json)) {
+        LOG_ERR("Payload troppo grande\n");
+        coap_set_status_code(response, BAD_REQUEST_4_00);
+        return;
+    }
+    memcpy(json, payload, len);
+    json[len] = '\0'; // Assicurati che la stringa sia terminata
+
+    // Parsing del payload JSON
+    if (strstr(json, "\"s\":") != NULL) {
+        sscanf(strstr(json, "\"s\":") + 5, "%d", &nuovo_stato);
+        printf("Nuovo stato: %d\n", nuovo_stato);
+    }
+
+    if (nuovo_stato == 2) {
+        if (strstr(json, "\"t\":") != NULL) {
+            sscanf(strstr(json, "\"t\":") + 5, "%d", &tempo_limite);
+        }
+        calcola_momento_migliore();
+    } else if (nuovo_stato == 0) {
+        disattiva_dispositivo();
+    } else if (nuovo_stato == 1) {
+        avvia_dispositivo();
+    } else {
+        LOG_ERR("Stato non valido ricevuto: %d\n", nuovo_stato);
+        coap_set_status_code(response, BAD_REQUEST_4_00);
+        return;
+    }
+
+    coap_set_status_code(response, CHANGED_2_04);
+}
+EVENT_RESOURCE(remote_smartplug,
+    "title=\"remote_smartplug\";actuator",
+    NULL,
+    remote_post_handler,
+    NULL,
+    NULL,
+    NULL);
 static char json[256];
 void res_post_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
     const uint8_t *payload = NULL;
     size_t len = coap_get_payload(request, &payload);
-    LOG_INFO("POST ricevuto\n");
+    LOG_INFO("REMOTE POST ricevuto\n");
 
     if (payload == NULL || len == 0) {
         coap_set_status_code(response, BAD_REQUEST_4_00);
@@ -147,8 +205,11 @@ void res_post_handler(coap_message_t *request, coap_message_t *response, uint8_t
         LOG_INFO("Power IP: %s\n", power_ip);
 
         orologio_attivo = true;
-        etimer_set(&clock_timer, 60 * CLOCK_SECOND);
 
+        etimer_set(&clock_timer, 60 * CLOCK_SECOND);
+        
+        //attiva la risorsa remota 
+        coap_activate_resource(&remote_smartplug, "remote_smartplug");
         // Resetta il buffer per il prossimo payload
         memset(json, 0, sizeof(json));
 
@@ -223,55 +284,13 @@ float model_production_regress1(const float *features, int num_features);
 void avvia_dispositivo() {
     process_start(&avvia_dispositivo_process, NULL);
 }
-void remote_post_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
-    const uint8_t *payload = NULL;
-    int nuovo_stato = 0;
-    size_t len = coap_get_payload(request, &payload);
-    LOG_INFO("POST remoto ricevuto\n");
-    
-    if (payload == NULL || len == 0) {
-        coap_set_status_code(response, BAD_REQUEST_4_00);
-        LOG_ERR("Payload non valido\n");
-        return;
-    }
-    //parse il payload JSON
-    char json[256];
-    if (strstr(json, "\"s\":") != NULL) {
-        sscanf(strstr(json, "\"s\":") + 5, "%d", &nuovo_stato);
-    }
-    if (strstr(json, "\"t\":") != NULL) {
-        sscanf(strstr(json, "\"t\":") + 5, "%d", &tempo_limite);
-    }
-    if (nuovo_stato==2){
-        calcola_momento_migliore();
-    }
-    if (nuovo_stato==0){
-        disattiva_dispositivo();
-    }
-    if (nuovo_stato==1){
-        avvia_dispositivo();
-    }
-    // Gestisci il payload remoto qui
-    // Ad esempio, puoi inviare un messaggio al server o eseguire altre azioni
-
-    coap_set_status_code(response, CHANGED_2_04);
-}
-
-EVENT_RESOURCE(res_smartplug,
-               "title=\"Smartplug resource\";actuator",
-               NULL,
-               res_post_handler,
-               NULL,
-               NULL,
-               NULL);
-EVENT_RESOURCE(remote_smartplug,
-               "title=\"remote_smartplug\";actuator",
-               NULL,
-               remote_post_handler,
-               NULL,
-               NULL,
-               NULL);
-
+EVENT_RESOURCE(smartplug,
+    "title=\"smartplug\";actuator",
+    NULL,
+    res_post_handler,
+    NULL,
+    NULL,
+    NULL);
 PROCESS_THREAD(smartplug_process, ev, data) {
     PROCESS_BEGIN();
 
@@ -281,16 +300,14 @@ PROCESS_THREAD(smartplug_process, ev, data) {
     process_start(&registra_dispositivo_process, NULL);
 
     // Avvio risorsa
-    coap_activate_resource(&res_smartplug, "smartplug");
+    coap_activate_resource(&smartplug, "smartplug");
 
     while (1) {
         PROCESS_WAIT_EVENT();
 
         if (etimer_expired(&clock_timer)) {
             aggiorna_orologio();
-        } else {
-           // disattiva_dispositivo();
-        }
+        } 
     }
 
     PROCESS_END();
@@ -322,6 +339,7 @@ void aggiorna_orologio(void) {
         }
         LOG_INFO("Orologio aggiornato: %02d:%02d, Giorno: %02d, Mese: %02d\n", ore, minuti, giorno, mese);
         etimer_reset(&clock_timer);
+        etimer_set(&clock_timer, 60 * CLOCK_SECOND);  // Aggiorna ogni minuto
     }
 }
 
@@ -420,20 +438,17 @@ PROCESS_THREAD(avvia_dispositivo_process, ev, data) {
 
     static coap_endpoint_t server_endpoint;
     static coap_message_t request[1];
-
-    const char *server_url = "coap://[fd00::1]:5683/device_status";  // URL del server
-
     // Imposta lo stato del dispositivo a 1 (Attivo)
     stato_dispositivo = 1;
     printf("Dispositivo avviato. Stato impostato a: %d (Attivo)\n", stato_dispositivo);
 
     // Configura l'endpoint del server
-    coap_endpoint_parse(server_url, strlen(server_url), &server_endpoint);
+    coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &server_endpoint);    
     coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
-    coap_set_header_uri_path(request, "Control/");
+    coap_set_header_uri_path(request, "control/");
 
     // Payload per notificare l'avvio
-    const char *payload = "{ \"t\":\"actuator\",\"stato\": \"1\",\"nome\": \"Lavatrice\"}";
+    const char *payload = "{ \"t\":\"actuator\",\"stato\": \"1\"}";
     coap_set_payload(request, (uint8_t *)payload, strlen(payload));
     printf("Invio segnale al server: %s\n", payload);
 
@@ -443,8 +458,8 @@ PROCESS_THREAD(avvia_dispositivo_process, ev, data) {
     printf("Segnale di avvio inviato al server con successo.\n");
 
     // Imposta il timer per disattivare il dispositivo dopo la durata del task
-    etimer_set(&task_timer, durata_task * CLOCK_SECOND);
-    printf("Timer impostato per disattivare il dispositivo dopo %d secondi.\n", durata_task);
+    etimer_set(&task_timer, durata_task * 60 *CLOCK_SECOND);
+    printf("Timer impostato per disattivare il dispositivo dopo %d minuti.\n", durata_task);
 
     PROCESS_END();
 }

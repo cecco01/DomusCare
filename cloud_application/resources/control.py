@@ -82,16 +82,15 @@ class Control(Resource):
                 solarpower = None
                 power = None
                 stato = payload.get("stato")
-                nome = payload.get("nome")
-                self.cambia_stato(nome, stato)
+                #prendo l'ip_address dal payload
+                ip_address = request.source
+                print(f"ip_address: {ip_address}")                
+                self.cambia_stato(ip_address, stato)
             else:
                 self.payload = "Errore: tipo non riconosciuto."
                 print(self.payload)
                 return self
-
-
-            self.payload = "Stato dle dispositivo aggiornato(??)."
-            print(self.payload)
+            
             return self
         except json.JSONDecodeError:
             self.payload = "Errore: payload JSON non valido."
@@ -101,7 +100,7 @@ class Control(Resource):
             self.payload = f"Errore durante l'inserimento dei dati: {e}"
             print(self.payload)
             return self
-    def cambia_stato(self, nome, stato):
+    def cambia_stato(self, ip, stato):
         """
         Cambia lo stato di un dispositivo nel database.
 
@@ -109,11 +108,13 @@ class Control(Resource):
         :param stato: Nuovo stato del dispositivo.
         :param tempo_limite: Tempo limite per il completamento del task.
         """
+        print(f"CONTROL: cambia_stato")
         if not self.connection.is_connected():
             print("Database connection lost.")
             return
 
         try:
+            nome=self.get_nome_by_ip(ip)
             cursor = self.connection.cursor()
             query = """
             UPDATE dispositivi
@@ -126,6 +127,33 @@ class Control(Resource):
             print(f"Stato del dispositivo '{nome}' aggiornato a {stato}.")
         except Error as e:
             print(f"Errore durante l'aggiornamento dello stato del dispositivo: {e}")
+    def get_nome_by_ip(self, ip):
+        """
+        Recupera il nome di un dispositivo in base al suo indirizzo IP.
+
+        :param ip: Indirizzo IP del dispositivo.
+        :return: Nome del dispositivo.
+        """
+        if not self.connection.is_connected():
+            print("Database connection lost.")
+            return
+
+        try:
+            cursor = self.connection.cursor()
+            ip=str(ip)
+            query = "SELECT nome FROM dispositivi WHERE ip_address = %s"
+            cursor.execute(query, (ip,))
+            result = cursor.fetchone()
+            cursor.close()
+
+            if result:
+                return result[0]
+            else:
+                print(f"Nessun dispositivo trovato con l'IP {ip}.")
+                return None
+        except Error as e:
+            print(f"Errore durante il recupero del nome del dispositivo: {e}")
+
     def insert_data(self, solarpower, power, smartplug):
         """
         Inserisce un nuovo record nella tabella 'data'.

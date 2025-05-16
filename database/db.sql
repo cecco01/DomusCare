@@ -34,7 +34,7 @@ DROP TABLE IF EXISTS dispositivi;
 
 -- Create the dispositivi table
 CREATE TABLE dispositivi (
-    ip_address VARCHAR(100) PRIMARY KEY,
+    ip_address VARCHAR(100) NOT NULL,
     nome VARCHAR(255) PRIMARY KEY,
     stato INT NOT NULL DEFAULT 0,  -- 2=pronto, 1=attivo, 0=inattivo
     consumo_kwh FLOAT NOT NULL,    -- Consumo in kWh
