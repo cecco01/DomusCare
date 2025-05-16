@@ -17,10 +17,22 @@
 #define STDDEV 14.283898 // VALORI ANCORA DA STABILIRE
 
 void res_power_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
-
+void handle(coap_message_t *response) {
+    if (response == NULL) {
+        LOG_ERR("Request timed out\n");
+    } else {
+        const uint8_t *payload = NULL;
+        int len = coap_get_payload(response, &payload);
+        if (len > 0) {
+            printf("Response received: %.*s\n", len, (const char *)payload);
+        } else {
+            LOG_INFO("Dati inviati con successo\n");
+        }
+    }
+}
 RESOURCE(res_power,
          "title=\"Power resource\";rt=\"power\"",
-         res_get_handler,
+         res_power_get_handler,  // Usa la funzione corretta
          NULL,
          NULL,
          NULL);
@@ -28,7 +40,6 @@ RESOURCE(res_power,
 static double current_power = 0; // Memorizza l'ultimo valore generato
 
 PROCESS(post_to_control_process, "Post to Control Process");
-
 
 PROCESS_THREAD(post_to_control_process, ev, data) {
 
@@ -50,18 +61,18 @@ PROCESS_THREAD(post_to_control_process, ev, data) {
 
     // Payload da inviare
     char msg[64];
-    snprintf(msg, sizeof(msg), "{\"t\": \"power\", \"value\": \"%.2f\"}", current_solarpower);
+    snprintf(msg, sizeof(msg), "{\"t\": \"power\", \"value\": \"%.2f\"}", current_power);
     coap_set_payload(request, (uint8_t *)msg, strlen(msg));
 
     LOG_INFO("Invio POST alla risorsa control: %s\n", msg);
 
     // Invia la richiesta
-    COAP_BLOCKING_REQUEST(&control_server_ep, request, NULL);
+    COAP_BLOCKING_REQUEST(&control_server_ep, request, handle);
 
     PROCESS_END();
 }
 
+
 void res_power_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
-    
     process_start(&post_to_control_process, NULL);
 }

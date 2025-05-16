@@ -19,7 +19,7 @@ void res_solar_get_handler(coap_message_t *request, coap_message_t *response, ui
 
 RESOURCE(res_solar,
   "title=\"Produzione Energeticq\";rt=\"Text\"",
-  res_get_handler,
+  res_solar_get_handler,
   NULL,
   NULL,
   NULL);
@@ -57,7 +57,13 @@ PROCESS_THREAD(post_to_solar_process, ev, data) {
     PROCESS_END();
 }
 
+void res_solar_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
+    // Genera un payload JSON con il valore corrente di current_solarpower
+    int length = snprintf((char *)buffer, preferred_size, "{\"solar_power\": %.2f}", current_solarpower);
 
-void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
-    
+    // Imposta il payload nella risposta
+    coap_set_payload(response, buffer, length);
+
+    LOG_INFO("Risposta GET inviata: %s\n", buffer);
 }
+
