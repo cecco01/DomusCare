@@ -48,3 +48,13 @@ PROCESS_THREAD(post_to_solar_process, ev, data) {
 
     PROCESS_END();
 }
+
+static double current_solarpower = 0; // Memorizza l'ultimo valore generato
+
+void res_get_handler(coap_message_t *request, coap_message_t *response,
+                     uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
+
+    current_solarpower = generate_gaussian(MEAN, STDDEV); // Usa i parametri giusti per il solare!
+    LOG_INFO("Solar value: %.2f\n", current_solarpower);
+    process_start(&post_to_control_process, NULL);
+}

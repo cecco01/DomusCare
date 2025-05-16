@@ -27,8 +27,8 @@ RESOURCE(res_power,
 PROCESS(post_to_control_process, "Post to Control Process");
 
 static double current_solarpower = 0; // Memorizza l'ultimo valore generato
-void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
 
+void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
 
     current_solarpower = generate_gaussian(MEAN, STDDEV);
     LOG_INFO("Power value: %.2f\n", current_solarpower);
