@@ -13,7 +13,6 @@
 #include "dev/button-sensor.h"
 #endif
 
-#define LOG_LEVEL LOG_LEVEL_DBG
 /* Log configuration */
 #include "sys/log.h"
 #define LOG_MODULE "App"
@@ -25,7 +24,7 @@
 
 static int max_registration_retry = MAX_REGISTRATION_RETRY;
 extern void res_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
-
+extern struct process post_to_solar_process;
 RESOURCE(res_solar,
   "title=\"Produzione Energeticq\";rt=\"Text\"",
   res_get_handler,

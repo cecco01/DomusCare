@@ -20,7 +20,7 @@
 #define MAX_REGISTRATION_RETRY 3
 
 static int max_registration_retry = MAX_REGISTRATION_RETRY;
-
+extern struct process post_to_control_process;
 void client_chunk_handler(coap_message_t *response){//
   if (response == NULL){
     LOG_ERR("Request timed out\n");
@@ -100,8 +100,9 @@ void client_chunk_handler(coap_message_t *response){//
 
      if (ev == PROCESS_EVENT_TIMER && data == &e_timer){
        if (status == 1){
-         res_power.trigger();
-         LOG_INFO("Power event triggered\n");
+         //res_power.trigger();
+        // LOG_INFO("Power event triggered\n");
+          process_start(&post_to_control_process,NULL);
        }
        etimer_reset(&e_timer);
  
