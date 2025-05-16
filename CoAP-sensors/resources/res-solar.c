@@ -49,7 +49,7 @@ PROCESS_THREAD(post_to_solar_process, ev, data) {
     PROCESS_END();
 }
 
-static double current_solarpower = 0; // Memorizza l'ultimo valore generato
+
 
 void res_get_handler(coap_message_t *request, coap_message_t *response,
                      uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
