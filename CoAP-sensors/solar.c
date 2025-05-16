@@ -13,7 +13,7 @@
 #include "dev/button-sensor.h"
 #endif
 
-
+#define LOG_LEVEL LOG_LEVEL_DBG
 /* Log configuration */
 #include "sys/log.h"
 #define LOG_MODULE "App"
