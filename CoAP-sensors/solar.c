@@ -58,6 +58,18 @@ void client_chunk_handler(coap_message_t *response){//
  extern coap_resource_t res_solar;
  extern void res_solar_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
+static int sampling_intervals[] = {10, 50, 100}; // varie velocità
+ static int current_sampling_index = 0; // Indice per la velocità di campionamento
+ 
+ void update_led_color() {
+  leds_off(LEDS_ALL);
+  switch(current_sampling_index) {
+    case 0: leds_single_on(LEDS_GREEN); break;
+    case 1: leds_single_on(LEDS_BLUE); break; 
+    case 2: leds_single_on(LEDS_RED); break;
+  }
+}
+
  static struct etimer e_timer, sleep_timer;
  
  PROCESS(SolarPw_server, "SolarPw Sensor CoAP Server");
@@ -93,8 +105,6 @@ void client_chunk_handler(coap_message_t *response){//
      // Set payload
      coap_set_payload(request, (uint8_t *)msg, sizeof(msg) - 1);//se non va bene prova strlen(msg)
  
-     leds_single_on(LEDS_YELLOW);
- 
      COAP_BLOCKING_REQUEST(&main_server_ep, request, client_chunk_handler);
  
      /* -------------- END REGISTRATION --------------*/
@@ -106,12 +116,11 @@ void client_chunk_handler(coap_message_t *response){//
    }
  
    LOG_INFO("REGISTRATION SUCCESS\n");
-   leds_single_off(LEDS_YELLOW);
- 
-   etimer_set(&e_timer, CLOCK_SECOND * 10);
+
+   update_led_color();
+   etimer_set(&e_timer, CLOCK_SECOND * sampling_intervals[current_sampling_index]);
  
    while (1){
- 
      PROCESS_WAIT_EVENT();
  
      if (ev == PROCESS_EVENT_TIMER && data == &e_timer){
@@ -130,16 +139,11 @@ void client_chunk_handler(coap_message_t *response){//
      }
      else if (ev == sensors_event && data == &button_sensor){
  #endif
- //NB: cosa avverrà se il puntante viene premuto è da rivedere visto che abbiamo abolito lo "status"!!! 
- //Vediamo come gestire questa parte relativa alla variabile status ma sopratutto al bottone!!
-       LOG_INFO("Button pressed: switch the SolarPw status from %d to %d\n", status, !status);
- 
-       status = !status;
- 
-       if (status == 1){
-         // set a timer to send the SolarPw value every 10 seconds
-         etimer_set(&e_timer, CLOCK_SECOND * 10);
-       }
+       // QUI METTI LA LOGICA DEL CAMBIO VELOCITÀ E LED
+    current_sampling_index = (current_sampling_index + 1) % 3;
+    update_led_color();
+    LOG_INFO("Nuova velocità di campionamento: %d secondi\n", sampling_intervals[current_sampling_index]);
+    etimer_set(&e_timer, CLOCK_SECOND * sampling_intervals[current_sampling_index]);
  
  #endif /* PLATFORM_HAS_BUTTON */
      }
