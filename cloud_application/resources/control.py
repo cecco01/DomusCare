@@ -4,6 +4,7 @@ from core.database import Database
 from coapthon.client.helperclient import HelperClient
 import json
 from coapthon import defines
+import time
 
 class Control(Resource):
     def __init__(self, name="Control"):
@@ -56,6 +57,8 @@ class Control(Resource):
         :return: Risposta CoAP con il risultato dell'operazione.
         """
         print(f"CONTROL: RENDER POST ")
+        print(f"Payload ricevuto grezzo: {request.payload}")
+        time.sleep(10)
         try:
                 # Parsing del payload JSON
             payload = json.loads(request.payload)
