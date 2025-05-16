@@ -61,7 +61,7 @@ class Control(Resource):
         time.sleep(10)
         try:
                 # Parsing del payload JSON
-            payload = json.loads(payload)
+            payload = json.loads(request.payload)
             print(f"payload ricevuto:{payload}")
             tipo = payload.get("t")
 
