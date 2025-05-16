@@ -1,4 +1,4 @@
-    #include <stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -7,6 +7,7 @@
 #include "math.h"
 #include "sys/log.h"
 #include "coap-blocking-api.h"
+#include <locale.h>
 
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_APP
@@ -43,24 +44,25 @@ PROCESS_THREAD(post_to_control_process, ev, data) {
 
     PROCESS_BEGIN();
 
+    // Imposta la locale numerica su "C"
+    setlocale(LC_NUMERIC, "C");
 
-        // Configura l'endpoint del server
-        coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &control_server_ep);
+    // Configura l'endpoint del server
+    coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &control_server_ep);
 
-        // Prepara il messaggio
-        coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
-        coap_set_header_uri_path(request, "control/");
+    // Prepara il messaggio
+    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
+    coap_set_header_uri_path(request, "control/");
 
-        // Payload da inviare
-        char msg[64];
-        snprintf(msg, sizeof(msg), "{\"t\": \"power\", \"value\": %.2f}", current_solarpower);
-        coap_set_payload(request, (uint8_t *)msg, strlen(msg));
+    // Payload da inviare
+    char msg[64];
+    snprintf(msg, sizeof(msg), "{\"t\": \"power\", \"value\": \"%.2f\"}", current_solarpower);
+    coap_set_payload(request, (uint8_t *)msg, strlen(msg));
 
-        LOG_INFO("Invio POST alla risorsa control: %s\n", msg);
+    LOG_INFO("Invio POST alla risorsa control: %s\n", msg);
 
-        // Invia la richiesta
-        COAP_BLOCKING_REQUEST(&control_server_ep, request, NULL);
-    
+    // Invia la richiesta
+    COAP_BLOCKING_REQUEST(&control_server_ep, request, NULL);
 
     PROCESS_END();
 }
