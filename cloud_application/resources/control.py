@@ -58,10 +58,12 @@ class Control(Resource):
         """
         print(f"CONTROL: RENDER POST ")
         print(f"Payload ricevuto grezzo: {request.payload}")
+        payload_grezzo = request.payload.replace(",", ".")
+        print(f"Payload corretto: {payload_grezzo}")
         time.sleep(10)
         try:
                 # Parsing del payload JSON
-            payload = json.loads(request.payload)
+            payload = json.loads(payload_grezzo)
             print(f"payload ricevuto:{payload}")
             tipo = payload.get("t")
 
