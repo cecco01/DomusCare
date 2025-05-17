@@ -129,7 +129,7 @@ def recupera_lista_attuatori():
 
         # Mostra i dispositivi in formato tabella
         print("+-----------------+-----------+--------------+--------+")
-        print("| {:15} | {:9} | {:12} | {:6} |".format("Nome", "Stato", "Consumo kWh", "Durata(min)"))
+        print("| {:15} | {:9} | {:12} | {:11} |".format("Nome", "Stato", "Consumo kWh", "Durata(min)"))
         print("+-----------------+-----------+--------------+--------+")
         for dispositivo in dispositivi:
             nome = dispositivo["nome"]
