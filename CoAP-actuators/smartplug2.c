@@ -307,7 +307,7 @@ PROCESS_THREAD(smartplug_process, ev, data) {
     etimer_set(&clock_timer, 60 * CLOCK_SECOND);
     while (1) {
         PROCESS_YIELD(); // Così il processo si "sveglia" anche per la scadenza di qualsiasi timer
-//NB: PROCESS_YIELD() è meglio di PROCESS_WAIT_EVENT() in questo caso, perché si "sveglia" anche per la scadenza di timer che NON generano eventi espliciti.
+//NB: PROCESS_YIELD() è meglio di PROCESS_WAIT_EVENT() in questo caso, perché si "sveglia" anche per la scadenza di timer che NON generano eventi (come il ctimer).
     if (etimer_expired(&clock_timer)) {
         LOG_INFO("Timer scaduto, aggiornamento orologio...\n");
         aggiorna_orologio();
@@ -320,8 +320,8 @@ PROCESS_THREAD(smartplug_process, ev, data) {
         etimer_stop(&task_timer);
         task_timer_started = false;
     }
-}
-PROCESS_END();
+  }
+    PROCESS_END();
 }
 void disattiva_dispositivo(void) {
     process_start(&disattiva_dispositivo_process, NULL);
