@@ -300,12 +300,9 @@ PROCESS_THREAD(smartplug_process, ev, data) {
     // Avvio risorsa
     coap_activate_resource(&smartplug, "smartplug");
 
-
     etimer_set(&clock_timer, 60 * CLOCK_SECOND);
     while (1) {
-        LOG_INFO("In attesa di eventi...\n");
         PROCESS_WAIT_EVENT();
-        LOG_INFO("Evento ricevuto\n");
 
         if (etimer_expired(&clock_timer)) {
             LOG_INFO("Timer scaduto, aggiornamento orologio...\n");
@@ -313,15 +310,15 @@ PROCESS_THREAD(smartplug_process, ev, data) {
             etimer_reset(&clock_timer);
         } 
         
-        if (task_timer_started && etimer_expired(&task_timer)) {
-            LOG_INFO("Task timer scaduto, disattivazione dispositivo...\n");
-            disattiva_dispositivo();
-            etimer_stop(&task_timer);
-            task_timer_started = false; // Resetta lo stato del timer
+        if (task_timer_started) {
+            LOG_INFO("Verifica scadenza del task timer...\n");
+            if (ev == PROCESS_EVENT_TIMER && data == &e_timer) {
+                LOG_INFO("Task timer scaduto, disattivazione dispositivo...\n");
+                disattiva_dispositivo();
+                etimer_stop(&task_timer);
+                task_timer_started = false;
+            }
         }
-
-        // Gestione del timer a intervallo fisso
-        
     }
 
     PROCESS_END();
@@ -352,7 +349,7 @@ void aggiorna_orologio(void) {
                 }
             }
         }
-        Log_info("Orologio aggiornato: %02d:%02d, Giorno: %02d, Mese: %02d\n", ore, minuti, giorno, mese);
+        LOG_INFO("Orologio aggiornato: %02d:%02d, Giorno: %02d, Mese: %02d\n", ore, minuti, giorno, mese);
     } 
 }
 
@@ -406,10 +403,6 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
             etimer_set(&sleep_timer, 30 * CLOCK_SECOND);
             PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&sleep_timer));
         }
-    }
-
-    if (is_registered) {
-        LOG_INFO("REGISTRATION SUCCESS\n");
     }
     PROCESS_END();
 }
