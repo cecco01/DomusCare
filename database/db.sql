@@ -74,7 +74,7 @@ BEGIN
     FROM dispositivi
     WHERE stato = 1;
 
-    IF consumo_totale IS NOT NULL THEN
+    IF consumo_totale IS NOT NULL AND NEW.power IS NOT NULL THEN
         SET NEW.power = IFNULL(NEW.power, 0) + consumo_totale;
     END IF;
 END$$

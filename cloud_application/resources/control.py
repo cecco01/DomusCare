@@ -76,13 +76,13 @@ class Control(Resource):
                 solarpower = valore
                 power = None
                 smartplug = None
-                self.insert_data(solarpower, power, smartplug)
+                self.insert_data(solarpower, power)
             elif tipo == "power":
                 valore = payload.get("value")
                 solarpower = None
                 power = valore
                 smartplug = None
-                self.insert_data(solarpower, power, smartplug)
+                self.insert_data(solarpower, power)
             elif tipo == "actuator":
                 solarpower = None
                 power = None
@@ -160,7 +160,7 @@ class Control(Resource):
             if cursor:
                 cursor.close()
 
-    def insert_data(self, solarpower, power, smartplug):
+    def insert_data(self, solarpower, power):
         """
         Inserisce un nuovo record nella tabella 'data'.
         """

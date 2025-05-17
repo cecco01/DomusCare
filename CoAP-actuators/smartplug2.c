@@ -54,7 +54,7 @@ PROCESS(richiedi_dati_sensore_process, "Richiedi Dati Sensore Process");
 
 AUTOSTART_PROCESSES(&smartplug_process);
 void avvia_dispositivo();
-void disattiva_dispositivo(void);
+void disattiva_dispositivo();
 void aggiorna_orologio(void);
 void calcola_momento_migliore();
 void client_registration_handler(coap_message_t *response);
@@ -307,36 +307,6 @@ PROCESS_THREAD(smartplug_process, ev, data) {
     etimer_set(&clock_timer, 60 * CLOCK_SECOND);
     while (1) {
         PROCESS_YIELD(); // Così il processo si "sveglia" anche per la scadenza di qualsiasi timer
-<<<<<<< HEAD
-//NB: PROCESS_YIELD() è meglio di PROCESS_WAIT_EVENT() in questo caso, perché si "sveglia" anche per la scadenza di timer che NON generano eventi espliciti.
-        if (etimer_expired(&clock_timer)) {
-            LOG_INFO("Timer scaduto, aggiornamento orologio...\n");
-            aggiorna_orologio();
-            etimer_reset(&clock_timer);
-        }
-
-        if (task_timer_started) {
-            
-            
-            if (etimer_expired(&task_timer)) {
-                LOG_INFO("Task timer scaduto, disattivazione dispositivo...\n");
-                disattiva_dispositivo();
-                etimer_stop(&task_timer);
-                task_timer_started = false;
-            }
-            else {
-                clock_time_t now = clock_time();
-                clock_time_t expiration = etimer_expiration_time(&task_timer);
-                if (expiration > now) {
-                    clock_time_t remaining = expiration - now;
-                    printf("Il timer è attivo. Tempo rimanente: %lu secondi.\n", remaining / CLOCK_SECOND);
-                } else {
-                    printf("Il timer non è attivo.\n");
-            }
-            }
-        }
-    }
-=======
 //NB: PROCESS_YIELD() è meglio di PROCESS_WAIT_EVENT() in questo caso, perché si "sveglia" anche per la scadenza di timer che NON generano eventi (come il ctimer).
     if (etimer_expired(&clock_timer)) {
         LOG_INFO("Timer scaduto, aggiornamento orologio...\n");
@@ -351,10 +321,9 @@ PROCESS_THREAD(smartplug_process, ev, data) {
         task_timer_started = false;
     }*/
   }
->>>>>>> 69d8e2b2e92f8d2a659a08cc4b2fbdc99e0ed62d
     PROCESS_END();
 }
-void disattiva_dispositivo(void) {
+void disattiva_dispositivo(void *ptr) {
     process_start(&disattiva_dispositivo_process, NULL);
 }
 
@@ -446,6 +415,8 @@ PROCESS_THREAD(disattiva_dispositivo_process, ev, data) {
 
     // Imposta lo stato del dispositivo a 0 (Spento)
     stato_dispositivo = 0;
+
+    ctimer_stop(&task_timer); // Ferma il timer automatico
     printf("Dispositivo disattivato. Stato impostato a: %d (Spento)\n", stato_dispositivo);
 
     // Configura l'endpoint del server
@@ -465,7 +436,6 @@ PROCESS_THREAD(disattiva_dispositivo_process, ev, data) {
 
     printf("Segnale di disattivazione inviato al server con successo.\n");
 //AGGIUNTA (FORSE OPZIONALE?)
-    ctimer_stop(&task_timer); // Ferma il timer automatico
     task_timer_started = false;
 
     PROCESS_END();
@@ -496,8 +466,6 @@ PROCESS_THREAD(avvia_dispositivo_process, ev, data) {
     printf("Segnale di avvio inviato al server con successo.\n");
 
     // Imposta il timer per disattivare il dispositivo dopo la durata del task
-    //etimer_set(&task_timer, durata_task  *CLOCK_SECOND);//rimuovo il *60 per TESting
-    //task_timer_started = true; // Indica che il timer è stato avviato
     ctimer_set(&task_timer, durata_task * CLOCK_SECOND, disattiva_dispositivo, NULL);
     task_timer_started = true;
     printf("Timer impostato per disattivare il dispositivo dopo %d minuti.\n", durata_task);

@@ -40,6 +40,7 @@ build/cooja/obj/smartplug2.o: smartplug2.c \
  /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-observe.h \
  /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-separate.h \
  /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-observe-client.h \
+ /home/iot_ubuntu_intel/contiki-ng/os/sys/ctimer.h \
  /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-blocking-api.h \
  /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-request-state.h \
  ../ML/smart_grid_model_consumption.h \
@@ -94,6 +95,7 @@ project-conf.h:
 /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-observe.h:
 /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-separate.h:
 /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-observe-client.h:
+/home/iot_ubuntu_intel/contiki-ng/os/sys/ctimer.h:
 /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-blocking-api.h:
 /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-request-state.h:
 ../ML/smart_grid_model_consumption.h:
