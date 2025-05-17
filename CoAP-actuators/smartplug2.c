@@ -321,7 +321,8 @@ PROCESS_THREAD(smartplug_process, ev, data) {
         task_timer_started = false;
     }
 }
-
+PROCESS_END();
+}
 void disattiva_dispositivo(void) {
     process_start(&disattiva_dispositivo_process, NULL);
 }
