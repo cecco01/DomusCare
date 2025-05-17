@@ -62,6 +62,7 @@ void sensor_handler(coap_message_t *request);
 void res_post_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
 void richiedi_dati_sensore(const char *server_ep);
+
 void client_chunk_handler(coap_message_t *response) {
     const uint8_t *payload = NULL;
     size_t len = coap_get_payload(response, &payload);
@@ -70,6 +71,7 @@ void client_chunk_handler(coap_message_t *response) {
         printf("Dispositivo aggiornato con successo \n");
     } 
 }
+
 void sensor_handler(coap_message_t *request) {
     const uint8_t *payload = NULL;
     size_t len = coap_get_payload(request, &payload);
@@ -92,6 +94,7 @@ void sensor_handler(coap_message_t *request) {
         }
     }
 }
+
 void remote_post_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
     const uint8_t *payload = NULL;
     int nuovo_stato = 0;
@@ -302,25 +305,35 @@ PROCESS_THREAD(smartplug_process, ev, data) {
 
     etimer_set(&clock_timer, 60 * CLOCK_SECOND);
     while (1) {
-        PROCESS_WAIT_EVENT();
-
+        PROCESS_YIELD(); // Così il processo si "sveglia" anche per la scadenza di qualsiasi timer
+//NB: PROCESS_YIELD() è meglio di PROCESS_WAIT_EVENT() in questo caso, perché si "sveglia" anche per la scadenza di timer che NON generano eventi espliciti.
         if (etimer_expired(&clock_timer)) {
             LOG_INFO("Timer scaduto, aggiornamento orologio...\n");
             aggiorna_orologio();
             etimer_reset(&clock_timer);
-        } 
-        
+        }
+
         if (task_timer_started) {
-            LOG_INFO("Verifica scadenza del task timer...\n");
-            if (ev == PROCESS_EVENT_TIMER && data == &e_timer) {
+            
+            
+            if (etimer_expired(&task_timer)) {
                 LOG_INFO("Task timer scaduto, disattivazione dispositivo...\n");
                 disattiva_dispositivo();
                 etimer_stop(&task_timer);
                 task_timer_started = false;
             }
+            else {
+                clock_time_t now = clock_time();
+                clock_time_t expiration = etimer_expiration_time(&task_timer);
+                if (expiration > now) {
+                    clock_time_t remaining = expiration - now;
+                    printf("Il timer è attivo. Tempo rimanente: %lu secondi.\n", remaining / CLOCK_SECOND);
+                } else {
+                    printf("Il timer non è attivo.\n");
+            }
+            }
         }
     }
-
     PROCESS_END();
 }
 
