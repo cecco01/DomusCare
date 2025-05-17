@@ -85,24 +85,39 @@ void sensor_handler(coap_message_t *request) {
         memcpy(json, payload, len);
         json[len] = '\0'; // Assicurati che la stringa sia terminata
     
-        json[len] = '\0'; // Assicurati che la stringa sia terminata
         // Parsing del payload JSON
 
-        if (strstr(json, "\"t\":") != NULL) {
-            sscanf(strstr(json, "\"t\":") + 6, "%s", tipo);
-            printf("Tipo di dispositivo: %s\n", tipo);
+        char *t_ptr = strstr(json, "\"t\":");
+        if (t_ptr != NULL) {
+            // Cerca la prima doppia virgoletta dopo i due punti
+            char *start = strchr(t_ptr + 4, '\"'); // +4 per saltare '"t":'
+            if (start) {
+                start++; // Vai al carattere dopo la prima "
+                char *end = strchr(start, '\"');
+                if (end && (end - start) < (int)sizeof(tipo)) {
+                    size_t len = end - start;
+                    strncpy(tipo, start, len);
+                    tipo[len] = '\0';
+                    printf("Tipo di dispositivo: %s\n", tipo);
+                } else {
+                    printf("Errore nel parsing del tipo\n");
+                    return;
+                }
+            } else {
+                printf("Tipo di dispositivo non trovato\n");
+                return;
+            }
         }
-        else {
-            printf("Tipo di dispositivo non trovato\n");
-            return;
-        }
+
         if (strcmp(tipo, "solar") == 0) {
             if (strstr(json, "\"v\":") != NULL) {
-                sscanf(strstr(json, "\"v\":") + 6, "%f", &produzione);
+                sscanf(strstr(json, "\"v\":") + 5, "%f", &produzione);
                 LOG_INFO("Produzione solare: %f\n", produzione);
             }
+        }
+        if(strcmp(tipo, "power") == 0) {
             if (strstr(json, "\"v\":") != NULL) {
-                sscanf(strstr(json, "\"v\":") + 6, "%f", &consumo);
+                sscanf(strstr(json, "\"v\":") + 5, "%f", &consumo);
                 LOG_INFO("Consumo energetico: %f\n", consumo);
             }
         }
@@ -304,7 +319,7 @@ PROCESS_THREAD(calcola_momento_migliore_process, ev, data) {
     printf("Predizione consumo: %f\n", consumo_predetto);
     printf("Predizione produzione solare: %f\n", produzione_solare_predetta);
     // Controlla se c'è surplus energetico
-    if (produzione_solare_predetta > consumo_predetto + consumo_dispositivo && produzione > consumo) {
+    if (produzione_solare_predetta > (consumo_predetto + consumo_dispositivo) && produzione > consumo + consumo_dispositivo) {
         numero_ripetizioni = 0;
         printf("Produzione solare sufficiente. Avvio il dispositivo.\n");
         process_start(&avvia_dispositivo_process, NULL);
