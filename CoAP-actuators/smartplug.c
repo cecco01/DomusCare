@@ -243,9 +243,11 @@ PROCESS_THREAD(richiedi_dati_sensore_process, ev, data) {
 }
 
 void calcola_momento_migliore() {
-    printf("Inizio calcolo del momento migliore per avviare il dispositivo...\n");
 
+    printf("Inizio calcolo del momento migliore per avviare il dispositivo...\n");
+    printf("Richiesta dati dai sensori %s\n", solar_ip);
     richiedi_dati_sensore(solar_ip);
+    printf("Richiesta dati dai sensori %s\n", power_ip);
     richiedi_dati_sensore(power_ip);
     float features_produzione[4];
     float features_consumo[4];
@@ -265,7 +267,7 @@ void calcola_momento_migliore() {
         
         avvia_dispositivo();
     } else {
-        printf("Non è stato possibile trovare un momento con surplus energetico entro la prossima ora.\n");
+        process_start(&metti_in_pronto, NULL);
         printf("Richiedo nuovi dati dai sensori e riprovo tra 15 minuti.\n");
         numero_ripetizioni++;
         if(numero_ripetizioni== tempo_limite*4) {
@@ -447,6 +449,31 @@ PROCESS_THREAD(disattiva_dispositivo_process, ev, data) {
 
     printf("Segnale di disattivazione inviato al server con successo.\n");
 
+    PROCESS_END();
+}
+PROCESS_THREAD(metti_in_pronto, ev, data) {
+    PROCESS_BEGIN();
+
+    // Imposta lo stato del dispositivo a 2 (Pronto)
+    static coap_endpoint_t server_endpoint;
+    static coap_message_t request[1];
+    // Imposta lo stato del dispositivo a 1 (Attivo)
+    stato_dispositivo = 2;
+    printf("Stato impostato a: %d \n", stato_dispositivo);
+    ctimer_stop(&efficient_timer); // Ferma il timer automatico
+    // Configura l'endpoint del server
+    coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &server_endpoint);    
+    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
+    coap_set_header_uri_path(request, "control/");
+
+    // Payload per notificare l'avvio
+    const char *payload = "{ \"t\":\"actuator\",\"stato\": \"2\"}";
+    coap_set_payload(request, (uint8_t *)payload, strlen(payload));
+    printf("Invio segnale al server: %s\n", payload);
+
+    COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
+
+    
     PROCESS_END();
 }
 

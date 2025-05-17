@@ -32,7 +32,7 @@ static char power_ip[80] = {0};
 static bool orologio_attivo = false;
 float model_consumption_regress1(const float *features, int num_features);
 float model_production_regress1(const float *features, int num_features);
-static struct etimer efficient_timer;
+static struct ctimer efficient_timer;
 static int stato_dispositivo = 0;  // Stato del dispositivo: 0=Spento, 1=Attivo, 2=Pronto
 static float produzione = 0;  // Produzione energetica corrente
 static float consumo = 0;  // Consumo energetico corrente
@@ -247,7 +247,9 @@ void calcola_momento_migliore() {
     printf("Inizio calcolo del momento migliore per avviare il dispositivo...\n");
 
     richiedi_dati_sensore(solar_ip);
+    printf("Richiesta dati dai sensori %s\n", solar_ip);
     richiedi_dati_sensore(power_ip);
+    printf("Richiesta dati dai sensori %s\n", power_ip);
     float features_produzione[4];
     float features_consumo[4];
     features_produzione[0] = mese;  // Mese
@@ -266,7 +268,6 @@ void calcola_momento_migliore() {
         
         avvia_dispositivo();
     } else {
-        printf("Non è stato possibile trovare un momento con surplus energetico entro la prossima ora.\n");
         printf("Richiedo nuovi dati dai sensori e riprovo tra 15 minuti.\n");
         numero_ripetizioni++;
         if(numero_ripetizioni== tempo_limite*4) {
@@ -275,7 +276,7 @@ void calcola_momento_migliore() {
             return;
         }
         // Riprova tra 15 minuti
-        etimer_set(&efficient_timer, INTERVALLO_PREDIZIONE * CLOCK_SECOND);
+        ctimer_set(&efficient_timer, INTERVALLO_PREDIZIONE * CLOCK_SECOND, calcola_momento_migliore, NULL);
     }
 }
 void calcola_momento_migliore();
@@ -417,6 +418,7 @@ PROCESS_THREAD(disattiva_dispositivo_process, ev, data) {
     stato_dispositivo = 0;
 
     ctimer_stop(&task_timer); // Ferma il timer automatico
+    ctimer_stop(&efficient_timer); //
     printf("Dispositivo disattivato. Stato impostato a: %d (Spento)\n", stato_dispositivo);
 
     // Configura l'endpoint del server
@@ -441,6 +443,32 @@ PROCESS_THREAD(disattiva_dispositivo_process, ev, data) {
     PROCESS_END();
 }
 
+PROCESS_THREAD(metti_in_pronto, ev, data) {
+    PROCESS_BEGIN();
+
+    // Imposta lo stato del dispositivo a 2 (Pronto)
+    static coap_endpoint_t server_endpoint;
+    static coap_message_t request[1];
+    // Imposta lo stato del dispositivo a 1 (Attivo)
+    stato_dispositivo = 2;
+    printf("Stato impostato a: %d \n", stato_dispositivo);
+    ctimer_stop(&efficient_timer); // Ferma il timer automatico
+    // Configura l'endpoint del server
+    coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &server_endpoint);    
+    coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
+    coap_set_header_uri_path(request, "control/");
+
+    // Payload per notificare l'avvio
+    const char *payload = "{ \"t\":\"actuator\",\"stato\": \"2\"}";
+    coap_set_payload(request, (uint8_t *)payload, strlen(payload));
+    printf("Invio segnale al server: %s\n", payload);
+
+    COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
+
+    
+    PROCESS_END();
+}
+
 PROCESS_THREAD(avvia_dispositivo_process, ev, data) {
     PROCESS_BEGIN();
 
@@ -449,7 +477,7 @@ PROCESS_THREAD(avvia_dispositivo_process, ev, data) {
     // Imposta lo stato del dispositivo a 1 (Attivo)
     stato_dispositivo = 1;
     printf("Dispositivo avviato. Stato impostato a: %d (Attivo)\n", stato_dispositivo);
-
+    ctimer_stop(&efficient_timer); // Ferma il timer automatico
     // Configura l'endpoint del server
     coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &server_endpoint);    
     coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
