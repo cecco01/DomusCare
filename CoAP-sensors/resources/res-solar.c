@@ -58,7 +58,7 @@ PROCESS_THREAD(post_to_solar_process, ev, data) {
 
     // Payload da inviare
     char msg[64];
-    snprintf(msg, sizeof(msg), "{\"t\": \"solar\", \"value\": %.2f}", current_solarpower);
+    snprintf(msg, sizeof(msg), "{\"t\": \"solar\", \"v\": %.2f}", current_solarpower);
     coap_set_payload(request, (uint8_t *)msg, strlen(msg));
     
     LOG_INFO("Invio POST alla risorsa control: %s\n", msg);
