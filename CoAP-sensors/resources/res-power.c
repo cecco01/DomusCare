@@ -61,7 +61,7 @@ PROCESS_THREAD(post_to_control_process, ev, data) {
 
     // Payload da inviare
     char msg[64];
-    snprintf(msg, sizeof(msg), "{\"t\": \"power\", \"value\": \"%.2f\"}", current_power);
+    snprintf(msg, sizeof(msg), "{\"t\": \"power\", \"v\": \"%.2f\"}", current_power);
     coap_set_payload(request, (uint8_t *)msg, strlen(msg));
 
     LOG_INFO("Invio POST alla risorsa control: %s\n", msg);
