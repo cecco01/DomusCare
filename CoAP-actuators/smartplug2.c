@@ -76,7 +76,6 @@ void client_chunk_handler(coap_message_t *response) {
 void sensor_handler(coap_message_t *request) {
     const uint8_t *payload = NULL;
     size_t len = coap_get_payload(request, &payload);
-    printf("Payload: %.*s\n", (int)len, (const char *)payload);
     if (len > 0) {
         char json[64];
         char tipo[20];

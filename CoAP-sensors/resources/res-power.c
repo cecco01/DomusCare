@@ -61,7 +61,7 @@ PROCESS_THREAD(post_to_control_process, ev, data) {
 
     // Payload da inviare
     char msg[64];
-    snprintf(msg, sizeof(msg), "{\"t\": \"power\", \"v\": \"%.2f\"}", current_power);
+    snprintf(msg, sizeof(msg), "{\"t\": \"power\", \"value\": \"%.2f\"}", current_power);
     coap_set_payload(request, (uint8_t *)msg, strlen(msg));
 
     LOG_INFO("Invio POST alla risorsa control: %s\n", msg);
@@ -75,7 +75,7 @@ PROCESS_THREAD(post_to_control_process, ev, data) {
 
 void res_power_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
     // Genera un payload JSON con il valore corrente di current_power
-    int length = snprintf((char *)buffer, preferred_size, "{\"power\": %.2f}", current_power);
+    int length = snprintf((char *)buffer, preferred_size, "{\"t\": \"power\", \"v\": \"%.2f\"}", current_power);
 
     // Imposta il payload nella risposta
     coap_set_payload(response, buffer, length);
