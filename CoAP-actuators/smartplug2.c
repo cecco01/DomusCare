@@ -4,6 +4,7 @@
 #include "contiki.h"
 #include "coap-engine.h"
 #include "sys/etimer.h"
+#include "sys/ctimer.h"
 #include "coap-blocking-api.h"
 #include "../ML/smart_grid_model_consumption.h"
 #include "../ML/smart_grid_model_production.h"
@@ -23,7 +24,7 @@ static int max_registration_retry = 3;
 static bool is_registered = false;
 static int number_of_retries = 0;
 //static int tipo = 0;
-static struct etimer task_timer;
+static struct ctimer task_timer;
 static int durata_task = 60;  // Default duration in minutes
 static int  minuti = 0, giorno = 0, mese = 0, ore = 0;
 static char solar_ip[80] = {0};
@@ -314,12 +315,12 @@ PROCESS_THREAD(smartplug_process, ev, data) {
         etimer_reset(&clock_timer);
     }
 
-    if (task_timer_started && etimer_expired(&task_timer)) {
+    /*if (task_timer_started && etimer_expired(&task_timer)) {
         LOG_INFO("Task timer scaduto, disattivazione dispositivo...\n");
         disattiva_dispositivo();
         etimer_stop(&task_timer);
         task_timer_started = false;
-    }
+    }*/
   }
     PROCESS_END();
 }
@@ -437,6 +438,9 @@ PROCESS_THREAD(disattiva_dispositivo_process, ev, data) {
     COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
 
     printf("Segnale di disattivazione inviato al server con successo.\n");
+//AGGIUNTA (FORSE OPZIONALE?)
+    ctimer_stop(&task_timer); // Ferma il timer automatico
+    task_timer_started = false;
 
     PROCESS_END();
 }
@@ -466,8 +470,10 @@ PROCESS_THREAD(avvia_dispositivo_process, ev, data) {
     printf("Segnale di avvio inviato al server con successo.\n");
 
     // Imposta il timer per disattivare il dispositivo dopo la durata del task
-    etimer_set(&task_timer, durata_task  *CLOCK_SECOND);//rimuovo il *60 per TESting
-    task_timer_started = true; // Indica che il timer è stato avviato
+    //etimer_set(&task_timer, durata_task  *CLOCK_SECOND);//rimuovo il *60 per TESting
+    //task_timer_started = true; // Indica che il timer è stato avviato
+    ctimer_set(&task_timer, durata_task * CLOCK_SECOND, disattiva_dispositivo, NULL);
+    task_timer_started = true;
     printf("Timer impostato per disattivare il dispositivo dopo %d minuti.\n", durata_task);
 
     PROCESS_END();
