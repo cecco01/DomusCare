@@ -161,7 +161,7 @@ def remote_cli():
             nome = input("Inserisci il nome del dispositivo: ").strip()
             nuovo_stato = int(input("Inserisci il nuovo stato (2=Pronto, 1=Attivo, 0=Inattivo): ").strip())
             if nuovo_stato == 2:
-                ore = int(input("Inserisci entro quante ore deve essere completata la task (se applicabile): ").strip()) if nuovo_stato == 2 else 0
+                ore = int(input("Inserisci entro quante ore deve essere completata la task : ").strip()) if nuovo_stato == 2 else 0
                 cambia_stato_dispositivo(nome, nuovo_stato, ore)
             else:
                 cambia_stato_dispositivo(nome, nuovo_stato, 0)

@@ -45,7 +45,7 @@ static char *nome_dispositivo = "Lavatrice";  // Nome del disposit
 static int durata_task = 60 ;  // Durata del task in secondi
 */
 PROCESS(avvia_dispositivo_process, "Avvia Dispositivo Process");
-#define INTERVALLO_PREDIZIONE 900 // 15 minutes in seconds
+#define INTERVALLO_PREDIZIONE 60 // 15 minutes in seconds
 static float consumo_dispositivo = 1.5;
 PROCESS(registra_dispositivo_process, "Registra Dispositivo Process");
 PROCESS(disattiva_dispositivo_process, "Disattiva Dispositivo Process");
