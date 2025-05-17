@@ -128,17 +128,17 @@ def recupera_lista_attuatori():
         dispositivi = cursor.fetchall()
 
         # Mostra i dispositivi in formato tabella
-        print("+-----------------+-----------+--------------+--------+")
+        print("+-----------------+-----------+--------------+-------------+")
         print("| {:15} | {:9} | {:12} | {:11} |".format("Nome", "Stato", "Consumo kWh", "Durata(min)"))
-        print("+-----------------+-----------+--------------+--------+")
+        print("+-----------------+-----------+--------------+-------------+")
         for dispositivo in dispositivi:
             nome = dispositivo["nome"]
             stato = dispositivo["stato"]
             consumo = dispositivo["consumo_kwh"]
             durata = dispositivo["durata"]
             stato_str = "Attivo" if stato == 1 else "Inattivo" if stato == 0 else "Pronto"
-            print("| {:15} | {:9} | {:12} | {:6} |".format(nome, stato_str, consumo, durata))
-        print("+-----------------+-----------+--------------+--------+")
+            print("| {:15} | {:9} | {:12} | {:11} |".format(nome, stato_str, consumo, durata))
+        print("+-----------------+-----------+--------------+-------------+")
 
 
         # Chiudi il cursore

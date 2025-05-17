@@ -26,6 +26,7 @@ def reset_database():
         else:
             print("Errore nel reset del database.")
 
+
 def main():
     reset_database()
     host = "::"
