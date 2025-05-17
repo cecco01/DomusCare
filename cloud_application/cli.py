@@ -136,7 +136,7 @@ def recupera_lista_attuatori():
             stato = dispositivo["stato"]
             consumo = dispositivo["consumo_kwh"]
             durata = dispositivo["durata"]
-            stato_str = "Attivo" if stato == 1 else "Inattivo" if stato == 0 else "Pronto"
+            stato_str = "Attivo" if stato == 1 else "Inattivo" if stato == 0 else "Pronto" if stato == 2 else "Sconosciuto"
             print("| {:15} | {:9} | {:12} | {:11} |".format(nome, stato_str, consumo, durata))
         print("+-----------------+-----------+--------------+-------------+")
 

@@ -82,19 +82,31 @@ void sensor_handler(coap_message_t *request) {
         char json[64];
         char tipo[20];
         printf("Messaggio CoAP ricevuto: %.*s\n", (int)len, (const char *)payload);
+        memcpy(json, payload, len);
+        json[len] = '\0'; // Assicurati che la stringa sia terminata
+    
+        json[len] = '\0'; // Assicurati che la stringa sia terminata
+        // Parsing del payload JSON
+
         if (strstr(json, "\"t\":") != NULL) {
-            sscanf(strstr(json, "\"t\":") + 5, "%s", tipo);
+            sscanf(strstr(json, "\"t\":") + 6, "%s", tipo);
+            printf("Tipo di dispositivo: %s\n", tipo);
+        }
+        else {
+            printf("Tipo di dispositivo non trovato\n");
+            return;
         }
         if (strcmp(tipo, "solar") == 0) {
             if (strstr(json, "\"v\":") != NULL) {
-                sscanf(strstr(json, "\"v\":") + 5, "%f", &produzione);
+                sscanf(strstr(json, "\"v\":") + 6, "%f", &produzione);
                 LOG_INFO("Produzione solare: %f\n", produzione);
             }
             if (strstr(json, "\"v\":") != NULL) {
-                sscanf(strstr(json, "\"v\":") + 5, "%f", &consumo);
+                sscanf(strstr(json, "\"v\":") + 6, "%f", &consumo);
                 LOG_INFO("Consumo energetico: %f\n", consumo);
             }
         }
+        
     }
 }
 
@@ -273,19 +285,24 @@ PROCESS_THREAD(calcola_momento_migliore_process, ev, data) {
     COAP_BLOCKING_REQUEST(&power_endpoint, power_request, sensor_handler);
 
     // Calcolo delle predizioni
-    float features_produzione[4];
-    float features_consumo[4];
+    float features_produzione[5];
+    float features_consumo[5];
     features_produzione[0] = mese;  // Mese
     features_produzione[1] = giorno;  // Giorno
     features_produzione[2] = ore;  // Ora
-    features_produzione[3] = produzione;  // Potenza solare (kW)
+    features_produzione[3] =minuti;  // Minuti
+    features_produzione[4] = produzione;  // Potenza solare (kW)
     features_consumo[0] = mese;     // Mese
     features_consumo[1] = giorno;   // Giorno
     features_consumo[2] = ore;      // Ora
-    features_consumo[3] = consumo;  // Tensione (Volt)
-    float consumo_predetto = model_consumption_regress1(features_consumo, 4);
-    float produzione_solare_predetta = model_production_regress1(features_produzione, 4);
-
+    features_consumo[3] =minuti;  // Minuti
+    features_consumo[4] = consumo;  // Tensione (Volt)
+    printf("Caratteristiche produzione: %f, %f, %f, %f,%f \n", features_produzione[0], features_produzione[1], features_produzione[2], features_produzione[3], features_produzione[4]);
+    printf("Caratteristiche consumo: %f, %f, %f, %f,%f\n", features_consumo[0], features_consumo[1], features_consumo[2], features_consumo[3], features_consumo[4]);
+    float consumo_predetto = model_consumption_regress1(features_consumo, 5);
+    float produzione_solare_predetta = model_production_regress1(features_produzione, 5);
+    printf("Predizione consumo: %f\n", consumo_predetto);
+    printf("Predizione produzione solare: %f\n", produzione_solare_predetta);
     // Controlla se c'è surplus energetico
     if (produzione_solare_predetta > consumo_predetto + consumo_dispositivo && produzione > consumo) {
         numero_ripetizioni = 0;
