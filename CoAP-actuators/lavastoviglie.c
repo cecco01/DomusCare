@@ -38,15 +38,10 @@ static float produzione = 0;  // Produzione energetica corrente
 static float consumo = 0;  // Consumo energetico corrente
 static int numero_ripetizioni = 0;  // Dichiarazione globale
 static int tempo_limite = 0;  // Tempo in ore entro il quale il task deve essere completato
-//variabili del dispositivo
-/*
-static char *nome_dispositivo = "Lavatrice";  // Nome del disposit
-  // Consumo energetico corrente
-static int durata_task = 60 ;  // Durata del task in secondi
-*/
+
 PROCESS(avvia_dispositivo_process, "Avvia Dispositivo Process");
 #define INTERVALLO_PREDIZIONE 60 // 15 minutes in seconds
-static float consumo_dispositivo = 1.5;
+static float consumo_lavastoviglie = 2.3;
 PROCESS(registra_dispositivo_process, "Registra Dispositivo Process");
 PROCESS(disattiva_dispositivo_process, "Disattiva Dispositivo Process");
 PROCESS(smartplug_process, "Smart Plug Process");
@@ -438,7 +433,7 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
         coap_set_header_uri_path(request, "register/");
         char msg[256];
         // Inizializza il messaggio JSON
-        snprintf(msg, sizeof(msg), "{\"t\": \"actuator\", \"n\": \"Lavatrice\", \"c\": \"1.5\", \"d\": \"60\"}");
+        snprintf(msg, sizeof(msg), "{\"t\": \"actuator\", \"n\": \"Lavastoviglie\", \"c\": \"2.3\", \"d\": \"60\"}");
         coap_set_payload(request, (uint8_t *)msg, strlen(msg));
         printf("Invio richiesta di registrazione: %s\n", msg);
         COAP_BLOCKING_REQUEST(&main_server_ep, request, client_registration_handler);
@@ -486,7 +481,7 @@ PROCESS_THREAD(disattiva_dispositivo_process, ev, data) {
     COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
 
     printf("Segnale di disattivazione inviato al server con successo.\n");
-//AGGIUNTA (FORSE OPZIONALE?)
+
     task_timer_started = false;
 
     PROCESS_END();

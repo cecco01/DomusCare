@@ -4,6 +4,7 @@
 #include "contiki.h"
 #include "coap-engine.h"
 #include "sys/etimer.h"
+#include "sys/ctimer.h"
 #include "coap-blocking-api.h"
 #include "../ML/smart_grid_model_consumption.h"
 #include "../ML/smart_grid_model_production.h"
@@ -23,7 +24,7 @@ static int max_registration_retry = 3;
 static bool is_registered = false;
 static int number_of_retries = 0;
 //static int tipo = 0;
-static struct etimer task_timer;
+static struct ctimer task_timer;
 static int durata_task = 60;  // Default duration in minutes
 static int  minuti = 0, giorno = 0, mese = 0, ore = 0;
 static char solar_ip[80] = {0};
@@ -37,23 +38,19 @@ static float produzione = 0;  // Produzione energetica corrente
 static float consumo = 0;  // Consumo energetico corrente
 static int numero_ripetizioni = 0;  // Dichiarazione globale
 static int tempo_limite = 0;  // Tempo in ore entro il quale il task deve essere completato
-//variabili del dispositivo
-/*
-static char *nome_dispositivo = "Lavatrice";  // Nome del disposit
-  // Consumo energetico corrente
-static int durata_task = 60 ;  // Durata del task in secondi
-*/
+
 PROCESS(avvia_dispositivo_process, "Avvia Dispositivo Process");
-#define INTERVALLO_PREDIZIONE 900 // 15 minutes in seconds
-static float consumo_dispositivo = 1.5;
+#define INTERVALLO_PREDIZIONE 60 // 15 minutes in seconds
+static float consumo_asciugatrice = 2;
 PROCESS(registra_dispositivo_process, "Registra Dispositivo Process");
 PROCESS(disattiva_dispositivo_process, "Disattiva Dispositivo Process");
 PROCESS(smartplug_process, "Smart Plug Process");
 PROCESS(richiedi_dati_sensore_process, "Richiedi Dati Sensore Process");
-
+PROCESS(metti_in_pronto, "Metti in Pronto Process");
+PROCESS(calcola_momento_migliore_process, "Calcola Momento Migliore Process");
 AUTOSTART_PROCESSES(&smartplug_process);
 void avvia_dispositivo();
-void disattiva_dispositivo(void);
+void disattiva_dispositivo();
 void aggiorna_orologio(void);
 void calcola_momento_migliore();
 void client_registration_handler(coap_message_t *response);
@@ -62,6 +59,7 @@ void sensor_handler(coap_message_t *request);
 void res_post_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 
 void richiedi_dati_sensore(const char *server_ep);
+
 void client_chunk_handler(coap_message_t *response) {
     const uint8_t *payload = NULL;
     size_t len = coap_get_payload(response, &payload);
@@ -70,28 +68,43 @@ void client_chunk_handler(coap_message_t *response) {
         printf("Dispositivo aggiornato con successo \n");
     } 
 }
+
 void sensor_handler(coap_message_t *request) {
     const uint8_t *payload = NULL;
     size_t len = coap_get_payload(request, &payload);
+    printf("sensor_handler\n");
     if (len > 0) {
         char json[64];
         char tipo[20];
         printf("Messaggio CoAP ricevuto: %.*s\n", (int)len, (const char *)payload);
+        memcpy(json, payload, len);
+        json[len] = '\0'; // Assicurati che la stringa sia terminata
+    
+        json[len] = '\0'; // Assicurati che la stringa sia terminata
+        // Parsing del payload JSON
+
         if (strstr(json, "\"t\":") != NULL) {
-            sscanf(strstr(json, "\"t\":") + 5, "%s", tipo);
+            sscanf(strstr(json, "\"t\":") + 6, "%s", tipo);
+            printf("Tipo di dispositivo: %s\n", tipo);
+        }
+        else {
+            printf("Tipo di dispositivo non trovato\n");
+            return;
         }
         if (strcmp(tipo, "solar") == 0) {
             if (strstr(json, "\"v\":") != NULL) {
-                sscanf(strstr(json, "\"v\":") + 5, "%f", &produzione);
+                sscanf(strstr(json, "\"v\":") + 6, "%f", &produzione);
                 LOG_INFO("Produzione solare: %f\n", produzione);
             }
             if (strstr(json, "\"v\":") != NULL) {
-                sscanf(strstr(json, "\"v\":") + 5, "%f", &consumo);
+                sscanf(strstr(json, "\"v\":") + 6, "%f", &consumo);
                 LOG_INFO("Consumo energetico: %f\n", consumo);
             }
         }
+        
     }
 }
+
 void remote_post_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
     const uint8_t *payload = NULL;
     int nuovo_stato = 0;
@@ -205,9 +218,6 @@ void res_post_handler(coap_message_t *request, coap_message_t *response, uint8_t
         LOG_INFO("Power IP: %s\n", power_ip);
         
         orologio_attivo = true;
-        printf("Orologio attivo\n");
-        etimer_set(&clock_timer, 60 * CLOCK_SECOND);
-        LOG_INFO("Timer impostato per 60 secondi.\n");
         
         //attiva la risorsa remota 
         coap_activate_resource(&remote_smartplug, "remote_smartplug");
@@ -243,43 +253,76 @@ PROCESS_THREAD(richiedi_dati_sensore_process, ev, data) {
 }
 
 void calcola_momento_migliore() {
+    process_start(&calcola_momento_migliore_process, NULL);
+}
+
+PROCESS_THREAD(calcola_momento_migliore_process, ev, data) {
+    PROCESS_BEGIN();
 
     printf("Inizio calcolo del momento migliore per avviare il dispositivo...\n");
-    printf("Richiesta dati dai sensori %s\n", solar_ip);
-    richiedi_dati_sensore(solar_ip);
-    printf("Richiesta dati dai sensori %s\n", power_ip);
-    richiedi_dati_sensore(power_ip);
-    float features_produzione[4];
-    float features_consumo[4];
+
+    // Richiesta dati al sensore solare
+    static coap_endpoint_t solar_endpoint;
+    static coap_message_t solar_request[1];
+    coap_endpoint_parse(solar_ip, strlen(solar_ip), &solar_endpoint);
+    coap_init_message(solar_request, COAP_TYPE_CON, COAP_GET, 0);
+    coap_set_header_uri_path(solar_request, "valore/");
+    printf("Richiesta dati al sensore solare: %s\n", solar_ip);
+    COAP_BLOCKING_REQUEST(&solar_endpoint, solar_request, sensor_handler);
+
+    // Richiesta dati al sensore di consumo
+    static coap_endpoint_t power_endpoint;
+    static coap_message_t power_request[1];
+    coap_endpoint_parse(power_ip, strlen(power_ip), &power_endpoint);
+    coap_init_message(power_request, COAP_TYPE_CON, COAP_GET, 0);
+    coap_set_header_uri_path(power_request, "valore/");
+    printf("Richiesta dati al sensore di consumo: %s\n", power_ip);
+    COAP_BLOCKING_REQUEST(&power_endpoint, power_request, sensor_handler);
+
+    // Calcolo delle predizioni
+    float features_produzione[5];
+    float features_consumo[5];
     features_produzione[0] = mese;  // Mese
     features_produzione[1] = giorno;  // Giorno
     features_produzione[2] = ore;  // Ora
-    features_produzione[3] = produzione;  // Potenza solare (kW)
+    features_produzione[3] =minuti;  // Minuti
+    features_produzione[4] = produzione;  // Potenza solare (kW)
     features_consumo[0] = mese;     // Mese
     features_consumo[1] = giorno;   // Giorno
     features_consumo[2] = ore;      // Ora
-    features_consumo[3] = consumo;    // Tensione (Volt)
-    float consumo_predetto = model_consumption_regress1(features_consumo, 4);
-    float produzione_solare_predetta = model_production_regress1(features_produzione, 4);
-
+    features_consumo[3] =minuti;  // Minuti
+    features_consumo[4] = consumo;  // Tensione (Volt)
+    printf("Caratteristiche produzione: %f, %f, %f, %f,%f \n", features_produzione[0], features_produzione[1], features_produzione[2], features_produzione[3], features_produzione[4]);
+    printf("Caratteristiche consumo: %f, %f, %f, %f,%f\n", features_consumo[0], features_consumo[1], features_consumo[2], features_consumo[3], features_consumo[4]);
+    float consumo_predetto = model_consumption_regress1(features_consumo, 5);
+    float produzione_solare_predetta = model_production_regress1(features_produzione, 5);
+    printf("Predizione consumo: %f\n", consumo_predetto);
+    printf("Predizione produzione solare: %f\n", produzione_solare_predetta);
     // Controlla se c'è surplus energetico
-    if (produzione_solare_predetta > consumo_predetto + consumo_dispositivo && produzione > consumo) {
-        
-        avvia_dispositivo();
+    if (produzione_solare_predetta > consumo_predetto + consumo_asciugatrice && produzione > consumo) {
+        numero_ripetizioni = 0;
+        printf("Produzione solare sufficiente. Avvio il dispositivo.\n");
+        process_start(&avvia_dispositivo_process, NULL);
     } else {
-        process_start(&metti_in_pronto, NULL);
+        if(numero_ripetizioni == 0) {
+            process_start(&metti_in_pronto, NULL);
+        }
+        
         printf("Richiedo nuovi dati dai sensori e riprovo tra 15 minuti.\n");
         numero_ripetizioni++;
-        if(numero_ripetizioni== tempo_limite*4) {
+        if (numero_ripetizioni == tempo_limite * 4) {
             printf("Superato il numero massimo di tentativi. Avvio il dispositivo.\n");
             avvia_dispositivo();
-            numero_ripetizioni = 0; // Resetta il contatore
-            return;
+            numero_ripetizioni = 0;
+            PROCESS_EXIT();
         }
-        // Riprova tra 15 minuti
         ctimer_set(&efficient_timer, INTERVALLO_PREDIZIONE * CLOCK_SECOND, calcola_momento_migliore, NULL);
     }
+
+    PROCESS_END();
 }
+
+
 void calcola_momento_migliore();
 void richiedi_dati_sensore(const char *server_ep);
 static bool task_timer_started = false;
@@ -306,30 +349,26 @@ PROCESS_THREAD(smartplug_process, ev, data) {
     // Avvio risorsa
     coap_activate_resource(&smartplug, "smartplug");
 
+    etimer_set(&clock_timer, 60 * CLOCK_SECOND);
     while (1) {
-        LOG_INFO("In attesa di eventi...\n");
-        PROCESS_WAIT_EVENT();
-        LOG_INFO("Evento ricevuto\n");
-        
-
-
-        if (etimer_expired(&clock_timer)) {
-            LOG_INFO("Timer scaduto, aggiornamento orologio...\n");
-            aggiorna_orologio();
-        } 
-        
-        if (task_timer_started && etimer_expired(&task_timer)) {
-            LOG_INFO("Task timer scaduto, disattivazione dispositivo...\n");
-            disattiva_dispositivo();
-            etimer_stop(&task_timer);
-            task_timer_started = false; // Resetta lo stato del timer
-        }
+        PROCESS_YIELD(); // Così il processo si "sveglia" anche per la scadenza di qualsiasi timer
+//NB: PROCESS_YIELD() è meglio di PROCESS_WAIT_EVENT() in questo caso, perché si "sveglia" anche per la scadenza di timer che NON generano eventi (come il ctimer).
+    if (etimer_expired(&clock_timer)) {
+        LOG_INFO("Timer scaduto, aggiornamento orologio...\n");
+        aggiorna_orologio();
+        etimer_reset(&clock_timer);
     }
 
+    /*if (task_timer_started && etimer_expired(&task_timer)) {
+        LOG_INFO("Task timer scaduto, disattivazione dispositivo...\n");
+        disattiva_dispositivo();
+        etimer_stop(&task_timer);
+        task_timer_started = false;
+    }*/
+  }
     PROCESS_END();
 }
-
-void disattiva_dispositivo(void) {
+void disattiva_dispositivo(void *ptr) {
     process_start(&disattiva_dispositivo_process, NULL);
 }
 
@@ -355,11 +394,7 @@ void aggiorna_orologio(void) {
             }
         }
         LOG_INFO("Orologio aggiornato: %02d:%02d, Giorno: %02d, Mese: %02d\n", ore, minuti, giorno, mese);
-        etimer_reset(&clock_timer);
-        LOG_INFO("Timer resettato per 60 secondi.\n");
-    } else {
-        LOG_INFO("Orologio non attivo\n");
-    }
+    } 
 }
 
 void client_registration_handler(coap_message_t *response) {
@@ -398,7 +433,7 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
         coap_set_header_uri_path(request, "register/");
         char msg[256];
         // Inizializza il messaggio JSON
-        snprintf(msg, sizeof(msg), "{\"t\": \"actuator\", \"n\": \"Lavatrice\", \"c\": \"1.5\", \"d\": \"60\"}");
+        snprintf(msg, sizeof(msg), "{\"t\": \"actuator\", \"n\": \"Asciugatrice\", \"c\": \"2\", \"d\": \"60\"}");
         coap_set_payload(request, (uint8_t *)msg, strlen(msg));
         printf("Invio richiesta di registrazione: %s\n", msg);
         COAP_BLOCKING_REQUEST(&main_server_ep, request, client_registration_handler);
@@ -413,10 +448,6 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
             PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&sleep_timer));
         }
     }
-
-    if (is_registered) {
-        LOG_INFO("REGISTRATION SUCCESS\n");
-    }
     PROCESS_END();
 }
 
@@ -429,9 +460,11 @@ PROCESS_THREAD(disattiva_dispositivo_process, ev, data) {
 
     // Imposta lo stato del dispositivo a 0 (Spento)
     stato_dispositivo = 0;
-    printf("Dispositivo disattivato. Stato impostato a: %d (Spento)\n", stato_dispositivo);
+
     ctimer_stop(&task_timer); // Ferma il timer automatico
-    ctimer_stop(&efficient_timer); // Ferma il timer automatico
+    ctimer_stop(&efficient_timer); //
+    printf("Dispositivo disattivato. Stato impostato a: %d (Spento)\n", stato_dispositivo);
+
     // Configura l'endpoint del server
     coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &server_endpoint);
     coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
@@ -448,9 +481,12 @@ PROCESS_THREAD(disattiva_dispositivo_process, ev, data) {
     COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
 
     printf("Segnale di disattivazione inviato al server con successo.\n");
+//AGGIUNTA (FORSE OPZIONALE?)
+    task_timer_started = false;
 
     PROCESS_END();
 }
+
 PROCESS_THREAD(metti_in_pronto, ev, data) {
     PROCESS_BEGIN();
 
@@ -502,8 +538,8 @@ PROCESS_THREAD(avvia_dispositivo_process, ev, data) {
     printf("Segnale di avvio inviato al server con successo.\n");
 
     // Imposta il timer per disattivare il dispositivo dopo la durata del task
-    etimer_set(&task_timer, durata_task  *CLOCK_SECOND);//rimuovo il *60 per TESting
-    task_timer_started = true; // Indica che il timer è stato avviato
+    ctimer_set(&task_timer, durata_task * CLOCK_SECOND, disattiva_dispositivo, NULL);
+    task_timer_started = true;
     printf("Timer impostato per disattivare il dispositivo dopo %d minuti.\n", durata_task);
 
     PROCESS_END();
