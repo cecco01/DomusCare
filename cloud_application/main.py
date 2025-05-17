@@ -2,6 +2,7 @@ from serverCoAP import CoAPServer
 
 
 
+
 def main():
     host = "::"
     port = 5683
