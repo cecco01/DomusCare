@@ -31,7 +31,7 @@ static char power_ip[80] = {0};
 static bool orologio_attivo = false;
 float model_consumption_regress1(const float *features, int num_features);
 float model_production_regress1(const float *features, int num_features);
-static struct etimer efficient_timer;
+static struct ctimer efficient_timer;
 static int stato_dispositivo = 0;  // Stato del dispositivo: 0=Spento, 1=Attivo, 2=Pronto
 static float produzione = 0;  // Produzione energetica corrente
 static float consumo = 0;  // Consumo energetico corrente
@@ -271,10 +271,11 @@ void calcola_momento_migliore() {
         if(numero_ripetizioni== tempo_limite*4) {
             printf("Superato il numero massimo di tentativi. Avvio il dispositivo.\n");
             avvia_dispositivo();
+            numero_ripetizioni = 0; // Resetta il contatore
             return;
         }
         // Riprova tra 15 minuti
-        etimer_set(&efficient_timer, INTERVALLO_PREDIZIONE * CLOCK_SECOND);
+        ctimer_set(&efficient_timer, INTERVALLO_PREDIZIONE * CLOCK_SECOND, calcola_momento_migliore, NULL);
     }
 }
 void calcola_momento_migliore();
@@ -427,7 +428,8 @@ PROCESS_THREAD(disattiva_dispositivo_process, ev, data) {
     // Imposta lo stato del dispositivo a 0 (Spento)
     stato_dispositivo = 0;
     printf("Dispositivo disattivato. Stato impostato a: %d (Spento)\n", stato_dispositivo);
-
+    ctimer_stop(&task_timer); // Ferma il timer automatico
+    ctimer_stop(&efficient_timer); // Ferma il timer automatico
     // Configura l'endpoint del server
     coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &server_endpoint);
     coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
@@ -456,7 +458,7 @@ PROCESS_THREAD(avvia_dispositivo_process, ev, data) {
     // Imposta lo stato del dispositivo a 1 (Attivo)
     stato_dispositivo = 1;
     printf("Dispositivo avviato. Stato impostato a: %d (Attivo)\n", stato_dispositivo);
-
+    ctimer_stop(&efficient_timer); // Ferma il timer automatico
     // Configura l'endpoint del server
     coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &server_endpoint);    
     coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);

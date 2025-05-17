@@ -76,7 +76,7 @@ PROCESS_THREAD(post_to_control_process, ev, data) {
 void res_power_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
     // Genera un payload JSON con il valore corrente di current_power
     int length = snprintf((char *)buffer, preferred_size, "{\"t\": \"power\", \"v\": \"%.2f\"}", current_power);
-
+    LOG_INFO("GET RICEVUTA: %s\n", (char *)buffer);
     // Imposta il payload nella risposta
     coap_set_payload(response, buffer, length);
 

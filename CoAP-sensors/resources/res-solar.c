@@ -72,7 +72,7 @@ PROCESS_THREAD(post_to_solar_process, ev, data) {
 void res_solar_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
     // Genera un payload JSON con il valore corrente di current_solarpower
     int length = snprintf((char *)buffer, preferred_size, "{\"t\": \"solar\", \"v\": %.2f}", current_solarpower);
-
+    LOG_INFO("GET RICEVUTA: %s\n", (char *)buffer);
     // Imposta il payload nella risposta
     coap_set_payload(response, buffer, length);
 
