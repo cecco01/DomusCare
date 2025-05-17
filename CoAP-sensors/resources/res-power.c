@@ -31,7 +31,7 @@ void handle(coap_message_t *response) {
     }
 }
 RESOURCE(res_power,
-         "title=\"Power resource\";rt=\"power\"",
+         "title=\"valore\";rt=\"power\"",
          res_power_get_handler,  // Usa la funzione corretta
          NULL,
          NULL,

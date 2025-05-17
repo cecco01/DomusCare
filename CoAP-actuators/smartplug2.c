@@ -51,7 +51,8 @@ PROCESS(registra_dispositivo_process, "Registra Dispositivo Process");
 PROCESS(disattiva_dispositivo_process, "Disattiva Dispositivo Process");
 PROCESS(smartplug_process, "Smart Plug Process");
 PROCESS(richiedi_dati_sensore_process, "Richiedi Dati Sensore Process");
-
+PROCESS(metti_in_pronto, "Metti in Pronto Process");
+PROCESS(calcola_momento_migliore_process, "Calcola Momento Migliore Process");
 AUTOSTART_PROCESSES(&smartplug_process);
 void avvia_dispositivo();
 void disattiva_dispositivo();
@@ -76,6 +77,7 @@ void client_chunk_handler(coap_message_t *response) {
 void sensor_handler(coap_message_t *request) {
     const uint8_t *payload = NULL;
     size_t len = coap_get_payload(request, &payload);
+    printf("sensor_handler\n");
     if (len > 0) {
         char json[64];
         char tipo[20];
@@ -244,12 +246,33 @@ PROCESS_THREAD(richiedi_dati_sensore_process, ev, data) {
 }
 
 void calcola_momento_migliore() {
+    process_start(&calcola_momento_migliore_process, NULL);
+}
+
+PROCESS_THREAD(calcola_momento_migliore_process, ev, data) {
+    PROCESS_BEGIN();
+
     printf("Inizio calcolo del momento migliore per avviare il dispositivo...\n");
 
-    richiedi_dati_sensore(solar_ip);
-    printf("Richiesta dati dai sensori %s\n", solar_ip);
-    richiedi_dati_sensore(power_ip);
-    printf("Richiesta dati dai sensori %s\n", power_ip);
+    // Richiesta dati al sensore solare
+    static coap_endpoint_t solar_endpoint;
+    static coap_message_t solar_request[1];
+    coap_endpoint_parse(solar_ip, strlen(solar_ip), &solar_endpoint);
+    coap_init_message(solar_request, COAP_TYPE_CON, COAP_GET, 0);
+    coap_set_header_uri_path(solar_request, "valore/");
+    printf("Richiesta dati al sensore solare: %s\n", solar_ip);
+    COAP_BLOCKING_REQUEST(&solar_endpoint, solar_request, sensor_handler);
+
+    // Richiesta dati al sensore di consumo
+    static coap_endpoint_t power_endpoint;
+    static coap_message_t power_request[1];
+    coap_endpoint_parse(power_ip, strlen(power_ip), &power_endpoint);
+    coap_init_message(power_request, COAP_TYPE_CON, COAP_GET, 0);
+    coap_set_header_uri_path(power_request, "valore/");
+    printf("Richiesta dati al sensore di consumo: %s\n", power_ip);
+    COAP_BLOCKING_REQUEST(&power_endpoint, power_request, sensor_handler);
+
+    // Calcolo delle predizioni
     float features_produzione[4];
     float features_consumo[4];
     features_produzione[0] = mese;  // Mese
@@ -259,26 +282,35 @@ void calcola_momento_migliore() {
     features_consumo[0] = mese;     // Mese
     features_consumo[1] = giorno;   // Giorno
     features_consumo[2] = ore;      // Ora
-    features_consumo[3] = consumo;    // Tensione (Volt)
+    features_consumo[3] = consumo;  // Tensione (Volt)
     float consumo_predetto = model_consumption_regress1(features_consumo, 4);
     float produzione_solare_predetta = model_production_regress1(features_produzione, 4);
 
     // Controlla se c'è surplus energetico
     if (produzione_solare_predetta > consumo_predetto + consumo_dispositivo && produzione > consumo) {
-        
-        avvia_dispositivo();
+        numero_ripetizioni = 0;
+        printf("Produzione solare sufficiente. Avvio il dispositivo.\n");
+        process_start(&avvia_dispositivo_process, NULL);
     } else {
+        if(numero_ripetizioni == 0) {
+            process_start(&metti_in_pronto, NULL);
+        }
+        
         printf("Richiedo nuovi dati dai sensori e riprovo tra 15 minuti.\n");
         numero_ripetizioni++;
-        if(numero_ripetizioni== tempo_limite*4) {
+        if (numero_ripetizioni == tempo_limite * 4) {
             printf("Superato il numero massimo di tentativi. Avvio il dispositivo.\n");
             avvia_dispositivo();
-            return;
+            numero_ripetizioni = 0;
+            PROCESS_EXIT();
         }
-        // Riprova tra 15 minuti
         ctimer_set(&efficient_timer, INTERVALLO_PREDIZIONE * CLOCK_SECOND, calcola_momento_migliore, NULL);
     }
+
+    PROCESS_END();
 }
+
+
 void calcola_momento_migliore();
 void richiedi_dati_sensore(const char *server_ep);
 static bool task_timer_started = false;

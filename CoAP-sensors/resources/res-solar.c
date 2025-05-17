@@ -30,7 +30,7 @@ void s_handle(coap_message_t *response) {
   }
 }
 RESOURCE(res_solar,
-  "title=\"Produzione Energeticq\";rt=\"Text\"",
+  "title=\"valore\";rt=\"Text\"",
   res_solar_get_handler,
   NULL,
   NULL,

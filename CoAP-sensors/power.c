@@ -82,7 +82,7 @@ void client_chunk_handler(coap_message_t *response){//
  #endif
  
    LOG_INFO("Starting power Server\n");
-   coap_activate_resource(&res_power, "power");
+   coap_activate_resource(&res_power, "valore");
  
    while (max_registration_retry != 0){
      /* -------------- REGISTRATION --------------*/
