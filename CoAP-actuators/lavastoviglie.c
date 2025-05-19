@@ -314,7 +314,7 @@ PROCESS_THREAD(calcola_momento_migliore_process, ev, data) {
     printf("Predizione consumo: %f\n", consumo_predetto);
     printf("Predizione produzione solare: %f\n", produzione_solare_predetta);
     // Controlla se c'è surplus energetico
-    if (produzione_solare_predetta > (consumo_predetto + consumo_dispositivo) && produzione > consumo + consumo_dispositivo) {
+    if (produzione_solare_predetta > (consumo_predetto + consumo_lavastoviglie) && produzione > consumo + consumo_lavastoviglie) {
         numero_ripetizioni = 0;
         printf("Produzione solare sufficiente. Avvio il dispositivo.\n");
         process_start(&avvia_dispositivo_process, NULL);
