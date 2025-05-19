@@ -30,8 +30,6 @@ static int  minuti = 0, giorno = 0, mese = 0, ore = 0;
 static char solar_ip[80] = {0};
 static char power_ip[80] = {0};
 static bool orologio_attivo = false;
-float model_consumption_regress1(const float *features, int num_features);
-float model_production_regress1(const float *features, int num_features);
 static struct ctimer efficient_timer;
 static int stato_dispositivo = 0;  // Stato del dispositivo: 0=Spento, 1=Attivo, 2=Pronto
 static float produzione = 0;  // Produzione energetica corrente
@@ -314,7 +312,7 @@ PROCESS_THREAD(calcola_momento_migliore_process, ev, data) {
     printf("Predizione consumo: %f\n", consumo_predetto);
     printf("Predizione produzione solare: %f\n", produzione_solare_predetta);
     // Controlla se c'è surplus energetico
-    if (produzione_solare_predetta > (consumo_predetto + consumo_dispositivo) && produzione > consumo + consumo_dispositivo) {
+    if (produzione_solare_predetta > (consumo_predetto + consumo_lavastoviglie) && produzione > consumo + consumo_lavastoviglie) {
         numero_ripetizioni = 0;
         printf("Produzione solare sufficiente. Avvio il dispositivo.\n");
         process_start(&avvia_dispositivo_process, NULL);
@@ -341,8 +339,6 @@ PROCESS_THREAD(calcola_momento_migliore_process, ev, data) {
 void calcola_momento_migliore();
 void richiedi_dati_sensore(const char *server_ep);
 static bool task_timer_started = false;
-float model_consumption_regress1(const float *features, int num_features);
-float model_production_regress1(const float *features, int num_features);
 void avvia_dispositivo() {
     process_start(&avvia_dispositivo_process, NULL);
 }
