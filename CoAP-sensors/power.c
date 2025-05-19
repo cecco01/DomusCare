@@ -78,7 +78,7 @@ void client_chunk_handler(coap_message_t *response){//
  #if !PLATFORM_SUPPORTS_BUTTON_HAL
    SENSORS_ACTIVATE(button_sensor);
  #endif
-   printf("Press a button to...fare cosa?\n");
+   printf("Press a button to change speed\n");
  #endif
  
    LOG_INFO("Starting power Server\n");
@@ -90,7 +90,7 @@ void client_chunk_handler(coap_message_t *response){//
      coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &main_server_ep);
      // Prepare the message
      coap_init_message(request, COAP_TYPE_CON, COAP_POST, 0);
-     coap_set_header_uri_path(request, "register/");//ricontrolla se register va bene
+     coap_set_header_uri_path(request, "register/");
      const char msg[] = "{\"t\": \"power\"}";
 
      coap_set_payload(request, (uint8_t *)msg, sizeof(msg) - 1);
@@ -111,15 +111,13 @@ void client_chunk_handler(coap_message_t *response){//
    etimer_set(&e_timer, CLOCK_SECOND * sampling_intervals[current_sampling_index]);
  
    //etimer_set(&e_timer, CLOCK_SECOND * 30);
-   //etimer_set(&e_timer, CLOCK_SECOND * 310); ho tolto questo perchè adesso ""il campionamento è gestito dal bottone""!!
+   //etimer_set(&e_timer, CLOCK_SECOND * 310);
  
    while (1){
      PROCESS_WAIT_EVENT();
 
      if (ev == PROCESS_EVENT_TIMER && data == &e_timer){
        if (status == 1){
-         //res_power.trigger();
-        // LOG_INFO("Power event triggered\n");
           process_start(&post_to_control_process,NULL);
        }
        etimer_reset(&e_timer);
@@ -132,7 +130,7 @@ void client_chunk_handler(coap_message_t *response){//
      }
      else if (ev == sensors_event && data == &button_sensor){
  #endif
-      // QUI METTI LA LOGICA DEL CAMBIO VELOCITÀ E LED
+      // logica dle cambio di velocità e led
     current_sampling_index = (current_sampling_index + 1) % 3;
     update_led_color();
     LOG_INFO("Nuova velocità di campionamento: %d secondi\n", sampling_intervals[current_sampling_index]);
@@ -146,6 +144,6 @@ void client_chunk_handler(coap_message_t *response){//
    PROCESS_END();
  }
 
-/* Risorsa per il consumo energetico */
+
 
 

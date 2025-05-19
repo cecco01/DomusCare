@@ -27,7 +27,7 @@ static int max_registration_retry = MAX_REGISTRATION_RETRY;
 extern struct process post_to_solar_process;
 
 
-void client_chunk_handler(coap_message_t *response){//
+void client_chunk_handler(coap_message_t *response){
   if (response == NULL){
     LOG_ERR("Request timed out\n");
   }
@@ -87,12 +87,13 @@ static int sampling_intervals[] = {30, 50, 100}; // varie velocità
  #if !PLATFORM_SUPPORTS_BUTTON_HAL
    SENSORS_ACTIVATE(button_sensor);
  #endif
-   printf("Press a button to... fare cosa?\n");
+   printf("Press a button to change speed\n");
  #endif
  
    LOG_INFO("Starting SolarPw Server\n");
    coap_activate_resource(&res_solar, "valore");
  
+   
    while (max_registration_retry != 0){
      /* -------------- REGISTRATION --------------*/
      // Populate the coap_endpoint_t data structure
@@ -141,7 +142,7 @@ static int sampling_intervals[] = {30, 50, 100}; // varie velocità
      }
      else if (ev == sensors_event && data == &button_sensor){
  #endif
-       // QUI METTI LA LOGICA DEL CAMBIO VELOCITÀ E LED
+       // logica relativa la cambio velocità e led
     current_sampling_index = (current_sampling_index + 1) % 3;
     update_led_color();
     LOG_INFO("Nuova velocità di campionamento: %d secondi\n", sampling_intervals[current_sampling_index]);
@@ -156,7 +157,3 @@ static int sampling_intervals[] = {30, 50, 100}; // varie velocità
 
 
 
-/* Dichiarazione della risorsa per il consumo energetico */
-
-
-/* Implementazione del gestore GET per la risorsa */
