@@ -426,6 +426,8 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
 
     LOG_INFO("Starting SmartPlug Server\n");
 
+    leds_single_on(LEDS_BLUE);//test!!
+    
     while (!is_registered) {
         /* -------------- REGISTRAZIONE --------------*/
         coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &main_server_ep);

@@ -93,7 +93,8 @@ static int sampling_intervals[] = {30, 50, 100}; // varie velocità
    LOG_INFO("Starting SolarPw Server\n");
    coap_activate_resource(&res_solar, "valore");
  
-   
+   //leds_single_off(LEDS_YELLOW);
+
    while (max_registration_retry != 0){
      /* -------------- REGISTRATION --------------*/
      // Populate the coap_endpoint_t data structure
@@ -117,7 +118,7 @@ static int sampling_intervals[] = {30, 50, 100}; // varie velocità
    }
  
    LOG_INFO("REGISTRATION SUCCESS\n");
-   leds_single_off(LEDS_YELLOW);
+   //leds_single_off(LEDS_YELLOW);
  
   // etimer_set(&e_timer, CLOCK_SECOND * 30);
 
