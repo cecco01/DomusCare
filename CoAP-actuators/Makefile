@@ -1,4 +1,4 @@
-CONTIKI_PROJECT = smartplug
+CONTIKI_PROJECT = asciugatrice lavastoviglie lavatrice
 
 all: $(CONTIKI_PROJECT)
 
