@@ -326,8 +326,8 @@ PROCESS_THREAD(calcola_momento_migliore_process, ev, data) {
 void calcola_momento_migliore();
 void richiedi_dati_sensore(const char *server_ep);
 static bool task_timer_started = false;
-float model_consumption_regress1(const float *features, int num_features);
-float model_production_regress1(const float *features, int num_features);
+float model_consumption_regress1(const float *features, int32_t num_features);
+float model_production_regress1(const float *features, int32_t num_features);
 void avvia_dispositivo() {
     process_start(&avvia_dispositivo_process, NULL);
 }
