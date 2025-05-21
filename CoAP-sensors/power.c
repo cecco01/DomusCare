@@ -57,9 +57,9 @@ void client_chunk_handler(coap_message_t *response){//
  void update_led_color() {
   leds_off(LEDS_ALL);
   switch(current_sampling_index) {
-    case 0: leds_single_on(LEDS_GREEN); break;
-    case 1: leds_single_on(LEDS_BLUE); break; 
-    case 2: leds_single_on(LEDS_RED); break;
+    case 0: leds_on(LEDS_GREEN); break;
+    case 1: leds_on(LEDS_BLUE); break; 
+    case 2: leds_on(LEDS_RED); break;
   }
 }
 
@@ -82,6 +82,7 @@ void client_chunk_handler(coap_message_t *response){//
  #endif
  
    LOG_INFO("Starting power Server\n");
+   leds_on(LEDS_GREEN);
    coap_activate_resource(&res_power, "valore");
  
    while (max_registration_retry != 0){

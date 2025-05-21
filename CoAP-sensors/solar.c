@@ -64,9 +64,9 @@ static int sampling_intervals[] = {30, 50, 100}; // varie velocità
  void update_led_color() {
   leds_off(LEDS_ALL);
   switch(current_sampling_index) {
-    case 0: leds_single_on(LEDS_GREEN); break;
-    case 1: leds_single_on(LEDS_BLUE); break; 
-    case 2: leds_single_on(LEDS_RED); break;
+    case 0: leds_on(LEDS_GREEN); break;
+    case 1: leds_on(LEDS_BLUE); break; 
+    case 2: leds_on(LEDS_RED); break;
   }
 }
 
@@ -92,7 +92,7 @@ static int sampling_intervals[] = {30, 50, 100}; // varie velocità
  
    LOG_INFO("Starting SolarPw Server\n");
    coap_activate_resource(&res_solar, "valore");
-    leds_single_on(LEDS_GREEN);
+    leds_on(LEDS_GREEN);
    //leds_single_off(LEDS_YELLOW);
 
    while (max_registration_retry != 0){
