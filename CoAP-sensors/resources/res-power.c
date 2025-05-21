@@ -7,7 +7,6 @@
 #include "math.h"
 #include "sys/log.h"
 #include "coap-blocking-api.h"
-#include <locale.h>
 
 #define LOG_MODULE "App"
 #define LOG_LEVEL LOG_LEVEL_APP
@@ -49,8 +48,6 @@ PROCESS_THREAD(post_to_control_process, ev, data) {
     PROCESS_BEGIN();
     current_power = generate_gaussian(MEAN, STDDEV);
     LOG_INFO("Power value: %.2f\n", current_power);
-    // Imposta la locale numerica su "C"
-    //setlocale(LC_NUMERIC, "C");
 
     // Configura l'endpoint del server
     coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &control_server_ep);
@@ -61,7 +58,9 @@ PROCESS_THREAD(post_to_control_process, ev, data) {
 
     // Payload da inviare
     char msg[64];
-    snprintf(msg, sizeof(msg), "{\"t\": \"power\", \"value\": \"%.2f\"}", current_power);
+    current_power = current_power * 100; 
+    int power_int = (int)current_power;
+    snprintf(msg, sizeof(msg), "{\"t\": \"power\", \"value\": %d}", power_int);
     coap_set_payload(request, (uint8_t *)msg, strlen(msg));
 
     LOG_INFO("Invio POST alla risorsa control: %s\n", msg);
@@ -75,7 +74,9 @@ PROCESS_THREAD(post_to_control_process, ev, data) {
 
 void res_power_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset) {
     // Genera un payload JSON con il valore corrente di current_power
-    int length = snprintf((char *)buffer, preferred_size, "{\"t\": \"power\", \"v\": \"%.2f\"}", current_power);
+    current_power = current_power * 100; // mantengo due cifre decimali
+    int power_int = (int)current_power;
+    int length = snprintf((char *)buffer, preferred_size, "{\"t\": \"power\", \"v\": %d}", power_int);
     LOG_INFO("GET RICEVUTA: %s\n", (char *)buffer);
     // Imposta il payload nella risposta
     coap_set_payload(response, buffer, length);

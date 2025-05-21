@@ -65,22 +65,21 @@ class Control(Resource):
         print(f"CONTROL: RENDER POST ")
         print(f"Payload ricevuto grezzo: {request.payload}")
         # Fix: sostituisci la virgola con il punto solo nei numeri
-        fixed_payload = re.sub(r'(\d+),(\d+)', r'\1.\2', request.payload)
         try:
             # Parsing del payload JSON
-            payload = json.loads(fixed_payload)
+            payload = json.loads(request.payload)
             print(f"payload ricevuto:{payload}")
             tipo = payload.get("t")
 
             # Gestione dei valori in base al tipo
             if tipo == "solar":
-                valore = payload.get("value")
+                valore = payload.get("value")/100
                 solarpower = valore
                 power = None
                 smartplug = None
                 self.insert_data(solarpower, power)
             elif tipo == "power":
-                valore = payload.get("value")
+                valore = payload.get("value")/100
                 solarpower = None
                 power = valore
                 smartplug = None

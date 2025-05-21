@@ -92,10 +92,12 @@ void sensor_handler(coap_message_t *request) {
         if (strcmp(tipo, "solar") == 0) {
             if (strstr(json, "\"v\":") != NULL) {
                 sscanf(strstr(json, "\"v\":") + 6, "%f", &produzione);
+                produzione = (float)produzione / 100.0; // reinserisco i decimali
                 LOG_INFO("Produzione solare: %f\n", produzione);
             }
             if (strstr(json, "\"v\":") != NULL) {
                 sscanf(strstr(json, "\"v\":") + 6, "%f", &consumo);
+                consumo = (float)consumo / 100.0; // reinserisco i decimali
                 LOG_INFO("Consumo energetico: %f\n", consumo);
             }
         }
