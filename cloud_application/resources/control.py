@@ -5,6 +5,7 @@ from coapthon.client.helperclient import HelperClient
 import json
 from coapthon import defines
 import time
+import re
 
 class Control(Resource):
     def __init__(self, name="Control"):
@@ -61,12 +62,13 @@ class Control(Resource):
         :param request: Richiesta CoAP ricevuta.
         :return: Risposta CoAP con il risultato dell'operazione.
         """
-        #print(f"CONTROL: RENDER POST ")
-        #print(f"Payload ricevuto grezzo: {request.payload}")
-        time.sleep(10)
+        print(f"CONTROL: RENDER POST ")
+        print(f"Payload ricevuto grezzo: {request.payload}")
+        # Fix: sostituisci la virgola con il punto solo nei numeri
+        fixed_payload = re.sub(r'(\d+),(\d+)', r'\1.\2', request.payload)
         try:
-                # Parsing del payload JSON
-            payload = json.loads(request.payload)
+            # Parsing del payload JSON
+            payload = json.loads(fixed_payload)
             print(f"payload ricevuto:{payload}")
             tipo = payload.get("t")
 

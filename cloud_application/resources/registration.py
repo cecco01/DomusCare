@@ -59,6 +59,7 @@ class Registration(Resource):
                 self.send_activation_message(ip_address)
 
             self.payload = f"Registrazione completata per il sensore di tipo {sensor_type}."
+            
             return self
 
         except json.JSONDecodeError:
