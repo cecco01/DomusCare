@@ -22,34 +22,6 @@ class CoAPServer(CoAP):
         print(host, port)
         self.db = Database()
         self.connection = self.db.connect_db()
-        self.flush_sensor_table()
-#Quando un client CoAP invia una richiesta all’endpoint /register/, il server userà la logica della classe Registration. Se la richiesta va a /control/, userà la logica della classe Control.
         self.add_resource("register/", Registration("Registration"))
         self.add_resource("control/", Control("Control"))
-#"Tutto quello che arriva su /register/ lo gestisce Registration."
-#"Tutto quello che arriva su /control/ lo gestisce Control."
 
-    def flush_sensor_table(self):
-        """
-        Flush the sensor table
-
-        :return: None
-        """
-        if not self.connection.is_connected():
-            print("Database connection lost")
-            return
-
-        try:
-            cursor = self.connection.cursor()
-            truncate_sensor_table_query = "TRUNCATE TABLE sensor"
-            cursor.execute(truncate_sensor_table_query)
-            self.connection.commit()
-            cursor.close()
-        except Error as e:
-          print("Error flushing sensor table: {e}")
-
-    def close(self):
-        if self.connection.is_connected():
-            self.connection.close()
-        super(CoAPServer, self).close()
-        # super(CoAPServer, self).close() prima mi limitavo a fare questo senza chiudere la connessioen al db

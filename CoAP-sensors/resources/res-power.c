@@ -50,7 +50,7 @@ PROCESS_THREAD(post_to_control_process, ev, data) {
     current_power = generate_gaussian(MEAN, STDDEV);
     LOG_INFO("Power value: %.2f\n", current_power);
     // Imposta la locale numerica su "C"
-    setlocale(LC_NUMERIC, "C");
+    //setlocale(LC_NUMERIC, "C");
 
     // Configura l'endpoint del server
     coap_endpoint_parse(SERVER_EP, strlen(SERVER_EP), &control_server_ep);

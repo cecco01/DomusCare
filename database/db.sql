@@ -8,10 +8,10 @@ CREATE DATABASE iot;
 USE iot;
 
 -- Drop the sensor table if it exists
-DROP TABLE IF EXISTS sensor;
+DROP TABLE IF EXISTS dongle;
 
 -- Create the sensor table
-CREATE TABLE sensor (
+CREATE TABLE dongle (
     ip_address VARCHAR(100) PRIMARY KEY,
     type VARCHAR(100) NOT NULL
     );

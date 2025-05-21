@@ -92,7 +92,7 @@ static int sampling_intervals[] = {30, 50, 100}; // varie velocità
  
    LOG_INFO("Starting SolarPw Server\n");
    coap_activate_resource(&res_solar, "valore");
- 
+    leds_single_on(LEDS_GREEN);
    //leds_single_off(LEDS_YELLOW);
 
    while (max_registration_retry != 0){

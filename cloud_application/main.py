@@ -1,16 +1,21 @@
 from serverCoAP import CoAPServer
-
-
 import subprocess
+import json
 
 def reset_database():
-    # Modifica questi parametri secondo le tue esigenze
-    user = "root"
-    password = "root"
-    db_name = "iot"
-    sql_file = "/media/sf_AirClean/database/db.sql"
+    # Carica le credenziali dal file JSON
+    with open("private/credentials.json", "r") as file:
+        credentials = json.load(file)
+    user = credentials["MYSQL_USER"]
+    password = credentials["MYSQL_PASSWORD"]
+    db_name = credentials["MYSQL_DATABASE"]
 
-    # Costruisci il comando
+    # Comandi SQL per svuotare solo le tabelle desiderate
+    sql_commands = """
+    TRUNCATE TABLE dongle;
+    TRUNCATE TABLE dispositivi;
+    """
+
     command = [
         "mysql",
         f"-u{user}",
@@ -18,14 +23,11 @@ def reset_database():
         db_name
     ]
 
-    # Apri il file SQL e passalo come input al comando
-    with open(sql_file, "r") as sql:
-        result = subprocess.run(command, stdin=sql)
-        if result.returncode == 0:
-            print("Database resettato.")
-        else:
-            print("Errore nel reset del database.")
-
+    result = subprocess.run(command, input=sql_commands.encode(), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if result.returncode == 0:
+        print("Tabelle dongle e dispositivi resettate.")
+    else:
+        print("Errore nel reset delle tabelle:", result.stderr.decode())
 
 def main():
     reset_database()

@@ -218,7 +218,7 @@ void res_post_handler(coap_message_t *request, coap_message_t *response, uint8_t
         orologio_attivo = true;
         
         //attiva la risorsa remota 
-        coap_activate_resource(&remote_smartplug, "remote_smartplug");
+
         // Resetta il buffer per il prossimo payload
         memset(json, 0, sizeof(json));
 
@@ -344,6 +344,8 @@ PROCESS_THREAD(smartplug_process, ev, data) {
 
     // Avvio risorsa
     coap_activate_resource(&smartplug, "smartplug");
+    coap_activate_resource(&remote_smartplug, "remote_smartplug");
+
 
     etimer_set(&clock_timer, 60 * CLOCK_SECOND);
     while (1) {

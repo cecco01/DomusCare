@@ -31,34 +31,34 @@ class Registration(Resource):
         print(f"RENDER GET")
         print(f"Request parameters: {request.uri_query}")
         query = request.uri_query
-        self.fetch_sensor_from_db(query)
+        self.fetch_dongle_from_db(query)
         return self
 
     def render_POST(self, request):
         """
-        Gestisce la registrazione di un sensore. Se il tipo è 'actuator',
+        Gestisce la registrazione di un donglee. Se il tipo è 'actuator',
         invia un messaggio CoAP al dispositivo Smart Plug con data e ora.
         """
         print(f"RENDER POST - Request parameters: {request.uri_query}")
         try:
             payload = json.loads(request.payload)
             print(f"Payload ricevuto: {payload}")
-            sensor_type = payload.get("t")
+            dongle_type = payload.get("t")
             ip_address = request.source
-            if sensor_type == "a":
-                sensor_type = "actuator"
+            if dongle_type == "a":
+                dongle_type = "actuator"
 
-            if not sensor_type or not ip_address:
+            if not dongle_type or not ip_address:
                 print("Tipo o indirizzo IP mancante.")
                 self.payload = "Errore: tipo o indirizzo IP mancante."
                 return self
 
-            self.register_sensor(sensor_type, ip_address, payload)
+            self.register_dongle(dongle_type, ip_address, payload)
 
-            if sensor_type == "actuator":
+            if dongle_type == "actuator":
                 self.send_activation_message(ip_address)
 
-            self.payload = f"Registrazione completata per il sensore di tipo {sensor_type}."
+            self.payload = f"Registrazione completata per il donglee di tipo {dongle_type}."
             
             return self
 
@@ -66,57 +66,57 @@ class Registration(Resource):
             self.payload = "Errore: payload JSON non valido."
             return self
         except Error as e:
-            self.payload = f"Errore durante la registrazione del sensore: {e}"
+            self.payload = f"Errore durante la registrazione del donglee: {e}"
             return self
 
-    def fetch_sensor_from_db(self, type):
+    def fetch_dongle_from_db(self, type):
         cursor = None
         try:
             self.ensure_connection()
             cursor = self.connection.cursor()
-            select_sensor_query = """
+            select_dongle_query = """
             SELECT ip_address, type
-            FROM sensor
+            FROM dongle
             WHERE type = %s
             """
-            cursor.execute(select_sensor_query, (type,))
-            sensor_data = cursor.fetchall()
+            cursor.execute(select_dongle_query, (type,))
+            dongle_data = cursor.fetchall()
 
-            sensor = {}
-            if sensor_data:
-                for row in sensor_data:
+            dongle = {}
+            if dongle_data:
+                for row in dongle_data:
                     ip_address, type = row
-                    sensor[type] = {"ip_address": ip_address}
+                    dongle[type] = {"ip_address": ip_address}
                     response = {
-                        "sensor": type,
-                        "ip_address": sensor[type]["ip_address"]
+                        "dongle": type,
+                        "ip_address": dongle[type]["ip_address"]
                     }
                     self.payload = json.dumps(response, separators=(',', ':'))
                     print(f"Payload: {self.payload}")
             else:
                 self.payload = None
-                print(f"No sensor found for type: {type}. Payload: {self.payload}")
+                print(f"No dongle found for type: {type}. Payload: {self.payload}")
         except Error as e:
             self.payload = None
-            print(f"Error retrieving sensor data: {e}, Payload: {self.payload}")
+            print(f"Error retrieving dongle data: {e}, Payload: {self.payload}")
         finally:
             if cursor:
                 cursor.close()
 
-    def register_sensor(self, sensor_type, ip_address, payload):
+    def register_dongle(self, dongle_type, ip_address, payload):
         cursor = None
         try:
             self.ensure_connection()
             cursor = self.connection.cursor()
             query = """
-            INSERT INTO sensor (type, ip_address)
+            INSERT INTO dongle (type, ip_address)
             VALUES (%s, %s)
             """
-            cursor.execute(query, (str(sensor_type), str(ip_address)))
+            cursor.execute(query, (str(dongle_type), str(ip_address)))
             self.connection.commit()
-            print(f"Registrato il sensore di tipo {sensor_type} con indirizzo IP {ip_address}.")
+            print(f"Registrato il donglee di tipo {dongle_type} con indirizzo IP {ip_address}.")
 
-            if sensor_type == "actuator":
+            if dongle_type == "actuator":
                 query = """
                 INSERT INTO dispositivi (ip_address, nome, consumo_kwh, durata)
                 VALUES (%s, %s, %s, %s)
@@ -128,11 +128,11 @@ class Registration(Resource):
                     print(f"Errore: Dati mancanti nel payload. name={name}, consumo_kwh={consumo_kwh}, durata={durata}")
                 cursor.execute(query, (str(ip_address), str(name), float(consumo_kwh), int(durata)))
                 self.connection.commit()
-                print(f"Registrato il dispositivo di tipo {sensor_type} con indirizzo IP {ip_address}.")
-            if sensor_type in ["solar", "power"]:
+                print(f"Registrato il dispositivo di tipo {dongle_type} con indirizzo IP {ip_address}.")
+            if dongle_type in ["solar", "power"]:
                 self.notify_actuators()
         except Error as e:
-            print(f"Errore durante la registrazione del sensore: {e}")
+            print(f"Errore durante la registrazione del donglee: {e}")
         finally:
             if cursor:
                 cursor.close()
@@ -143,7 +143,7 @@ class Registration(Resource):
             self.ensure_connection()
             cursor = self.connection.cursor()
             query = """
-            SELECT ip_address FROM sensor
+            SELECT ip_address FROM dongle
             WHERE type = 'actuator'
             """
             cursor.execute(query)
@@ -175,25 +175,25 @@ class Registration(Resource):
             self.ensure_connection()
             cursor = self.connection.cursor()
             query = """
-            SELECT type, ip_address FROM sensor
+            SELECT type, ip_address FROM dongle
             WHERE type IN ('solar', 'power')
             """
             cursor.execute(query)
-            sensors = cursor.fetchall()
+            dongles = cursor.fetchall()
 
             solar_ip = ""
             power_ip = ""
 
-            for sensor_type, ip_port in sensors:
+            for dongle_type, ip_port in dongles:
                 if isinstance(ip_port, str):
                     ip_port = eval(ip_port)
                 if isinstance(ip_port, tuple) and len(ip_port) == 2:
-                    sensor_ip, sensor_port = ip_port
-                    formatted_ip = f"coap://[{sensor_ip}]:{sensor_port}"
-                    if sensor_type == "solar":
+                    dongle_ip, dongle_port = ip_port
+                    formatted_ip = f"coap://[{dongle_ip}]:{dongle_port}"
+                    if dongle_type == "solar":
                         solar_ip = formatted_ip
                         print(f"Solar IP: {solar_ip}")
-                    elif sensor_type == "power":
+                    elif dongle_type == "power":
                         power_ip = formatted_ip
                         print(f"Power IP: {power_ip}")
 

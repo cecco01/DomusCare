@@ -24,7 +24,7 @@ class Control(Resource):
 
     def render_GET(self, request):
         """
-        Gestisce le richieste GET per ottenere informazioni sui dispositivi o sensori.
+        Gestisce le richieste GET per ottenere informazioni sui dispositivi o donglei.
 
         :param request: Richiesta CoAP ricevuta.
         :return: Risposta CoAP con i dati richiesti.
@@ -49,15 +49,15 @@ class Control(Resource):
                 return self
         #fine aggiunta
         #altra correzione: prima prendeva solo il primo elemento della query string, ora prende tutto
-        sensor_type = None
+        dongle_type = None
         if query and query.startswith("type="):
-            sensor_type = query.split("=")[1]
-        self.fetch_sensor_from_db(sensor_type)
+            dongle_type = query.split("=")[1]
+        self.fetch_dongle_from_db(dongle_type)
         return self
 
     def render_POST(self, request):
         """
-        Gestisce le richieste POST per aggiornare lo stato di un dispositivo o sensore.
+        Gestisce le richieste POST per aggiornare lo stato di un dispositivo o donglee.
 
         :param request: Richiesta CoAP ricevuta.
         :return: Risposta CoAP con il risultato dell'operazione.
@@ -182,7 +182,7 @@ class Control(Resource):
 
     def render_PUT(self, request):
         """
-        Gestisce le richieste PUT per modificare le informazioni di un dispositivo o sensore.
+        Gestisce le richieste PUT per modificare le informazioni di un dispositivo o donglee.
 
         :param request: Richiesta CoAP ricevuta.
         :return: Risposta CoAP con il risultato dell'operazione.
@@ -212,7 +212,7 @@ class Control(Resource):
 
     def render_DELETE(self, request):
         """
-        Gestisce le richieste DELETE per rimuovere un dispositivo o sensore.
+        Gestisce le richieste DELETE per rimuovere un dispositivo o donglee.
 
         :param request: Richiesta CoAP ricevuta.
         :return: Risposta CoAP con il risultato dell'operazione.
@@ -238,11 +238,11 @@ class Control(Resource):
             print(self.payload)
             return self
 
-    def fetch_sensor_from_db(self, sensor_type):
+    def fetch_dongle_from_db(self, dongle_type):
         """
-        Recupera i dati di un sensore dal database.
+        Recupera i dati di un donglee dal database.
 
-        :param sensor_type: Tipo del sensore da cercare.
+        :param dongle_type: Tipo del donglee da cercare.
         """
         cursor = None
         try:
@@ -250,21 +250,21 @@ class Control(Resource):
             cursor = self.connection.cursor()
             query = """
             SELECT ip_address, type
-            FROM sensor
+            FROM dongle
             WHERE type = %s
             """
-            cursor.execute(query, (sensor_type,))
-            sensor_data = cursor.fetchall()
-            if sensor_data:
-                sensor = {row[1]: {"ip_address": row[0]} for row in sensor_data}
-                self.payload = json.dumps(sensor, separators=(',', ':'))
+            cursor.execute(query, (dongle_type,))
+            dongle_data = cursor.fetchall()
+            if dongle_data:
+                dongle = {row[1]: {"ip_address": row[0]} for row in dongle_data}
+                self.payload = json.dumps(dongle, separators=(',', ':'))
                 print(f"Payload: {self.payload}")
             else:
                 self.payload = None
-                print(f"No sensor found for type: {sensor_type}. Payload: {self.payload}")
+                print(f"No dongle found for type: {dongle_type}. Payload: {self.payload}")
         except Error as e:
             self.payload = None
-            print(f"Error retrieving sensor data: {e}, Payload: {self.payload}")
+            print(f"Error retrieving dongle data: {e}, Payload: {self.payload}")
         finally:
             if cursor:
                 cursor.close()
