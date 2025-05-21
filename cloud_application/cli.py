@@ -148,6 +148,15 @@ def recupera_lista_attuatori():
 
 def remote_cli():    
     while True:
+        print("""
+  _____                             _____               
+ |  __ \                           / ____|              
+ | |  | | ___  _ __ ___  _   _ ___| |     __ _ _ __ ___ 
+ | |  | |/ _ \| '_ ` _ \| | | / __| |    / _` | '__/ _ \
+ | |__| | (_) | | | | | | |_| \__ \ |___| (_| | | |  __/
+ |_____/ \___/|_| |_| |_|\__,_|___/\_____\__,_|_|  \___|
+                                                        
+    """)
         print("\nGestione da terminale:")
         print("1. Mostra dispositivi")
         print("2. Cambia stato dispositivo")
