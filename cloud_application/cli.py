@@ -17,7 +17,7 @@ def get_ip_by_name(nome):
         cursor = conn.cursor(dictionary=True)
 
         # Esegui la query per ottenere l'indirizzo IP
-        query = "SELECT ip_address FROM dispositivi WHERE nome = %s"
+        query = "SELECT ip_address FROM devices WHERE nome = %s"
         cursor.execute(query, (nome,))
         result = cursor.fetchone()
 
@@ -94,7 +94,7 @@ def rimuovi_dispositivo(nome):
         # Esegui la query per rimuovere il dispositivo
       
         
-        query = "DELETE FROM dispositivi WHERE nome = %s"
+        query = "DELETE FROM devices WHERE nome = %s"
         cursor.execute(query, (nome,))
         conn.commit()
         #rimuovo da sensor
@@ -125,7 +125,7 @@ def recupera_lista_attuatori():
         cursor = conn.cursor(dictionary=True)
 
         # Esegui la query per recuperare gli attuatori
-        query = "SELECT nome, stato, consumo_kwh, durata FROM dispositivi"
+        query = "SELECT nome, stato, consumo_kwh, durata FROM devices"
         cursor.execute(query)
         dispositivi = cursor.fetchall()
 
