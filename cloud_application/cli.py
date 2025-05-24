@@ -92,6 +92,8 @@ def rimuovi_dispositivo(nome):
         cursor = conn.cursor()
 
         # Esegui la query per rimuovere il dispositivo
+      
+        
         query = "DELETE FROM dispositivi WHERE nome = %s"
         cursor.execute(query, (nome,))
         conn.commit()

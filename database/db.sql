@@ -17,23 +17,31 @@ CREATE TABLE dongle (
     );
 
 -- Drop the data table if it exists
-DROP TABLE IF EXISTS data;
+DROP TABLE IF EXISTS data_solar;
 
 -- Create the data table
-CREATE TABLE data (
+CREATE TABLE data_solar (
     id INT AUTO_INCREMENT PRIMARY KEY,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp dei dati
     solarpower FLOAT DEFAULT NULL,                     -- Potenza pannelli (kW)
-    power FLOAT DEFAULT NULL                           -- Potenza consumata (kW)
     
 );
 
 
+DROP TABLE IF EXISTS data_power;
+
+
+CREATE TABLE data_power (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    power FLOAT DEFAULT NULL                        -- Potenza consumata (kW)
+);
+
 -- Drop the dispositivi table if it exists
-DROP TABLE IF EXISTS dispositivi;
+DROP TABLE IF EXISTS devices;
 
 -- Create the dispositivi table
-CREATE TABLE dispositivi (
+CREATE TABLE devices (
     ip_address VARCHAR(100) NOT NULL,
     nome VARCHAR(255) PRIMARY KEY,
     stato INT NOT NULL DEFAULT 0,  -- 2=pronto, 1=attivo, 0=inattivo
@@ -66,12 +74,12 @@ DELIMITER ;
 DELIMITER $$
 DROP TRIGGER IF EXISTS aggiorna_consumo_dispositivi;
 CREATE TRIGGER aggiorna_consumo_dispositivi
-BEFORE INSERT ON data
+BEFORE INSERT ON data_power
 FOR EACH ROW
 BEGIN
     DECLARE consumo_totale FLOAT;
     SELECT SUM(consumo_kwh) INTO consumo_totale
-    FROM dispositivi
+    FROM devices
     WHERE stato = 1;
 
     IF consumo_totale IS NOT NULL AND NEW.power IS NOT NULL THEN
@@ -83,7 +91,7 @@ DELIMITER ;
 DELIMITER $$
 DROP TRIGGER IF EXISTS inserisci_tempo_attivazione;
 CREATE TRIGGER inserisci_tempo_attivazione
-BEFORE INSERT ON dispositivi
+BEFORE INSERT ON devices
 FOR EACH ROW
 -- solo se il nuovo stato è 1
 BEGIN

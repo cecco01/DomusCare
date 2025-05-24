@@ -179,6 +179,9 @@ class Control(Resource):
             if cursor:
                 cursor.close()
 
+
+    ```            
+
     def render_PUT(self, request):
         """
         Gestisce le richieste PUT per modificare le informazioni di un dispositivo o donglee.
@@ -267,7 +270,7 @@ class Control(Resource):
         finally:
             if cursor:
                 cursor.close()
-
+    
     def update_device_status(self, nome, stato, tempo_limite):
         """
         Aggiorna lo stato di un dispositivo nel database.
