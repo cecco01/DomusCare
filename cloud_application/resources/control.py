@@ -137,14 +137,13 @@ class Control(Resource):
         try:
             self.ensure_connection()
             cursor = self.connection.cursor()
-            if solarpower is None:
-                query = "INSERT INTO data_solar (solarpower) VALUES (, %s)"
-                cursor.execute(query, (solarpower))
-            else:
+            if solarpower is not None:
+                query = "INSERT INTO data_solar (solarpower) VALUES (%s)"
+                cursor.execute(query, (solarpower,))
+            elif power is not None:
                 query = "INSERT INTO data_power (power) VALUES (%s)"
-                cursor.execute(query, (power))
+                cursor.execute(query, (power,))
             self.connection.commit()
-            #print(f"Nuovo record inserito nella tabella 'data': solarpower={solarpower}, power={power}")
         except Error as e:
             print(f"Errore durante l'inserimento dei dati nella tabella 'data': {e}")
         finally:

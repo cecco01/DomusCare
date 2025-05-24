@@ -22,14 +22,11 @@ DROP TABLE IF EXISTS data_solar;
 -- Create the data table
 CREATE TABLE data_solar (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Timestamp dei dati
-    solarpower FLOAT DEFAULT NULL,                     -- Potenza pannelli (kW)
-    
+    solarpower FLOAT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-
 DROP TABLE IF EXISTS data_power;
-
 
 CREATE TABLE data_power (
     id INT AUTO_INCREMENT PRIMARY KEY,
