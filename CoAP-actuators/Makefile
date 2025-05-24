@@ -3,19 +3,15 @@ CONTIKI_PROJECT = asciugatrice lavastoviglie lavatrice
 all: $(CONTIKI_PROJECT)
 
 
-# Do not try to build on Sky because of code size limitation
-# PLATFORMS_EXCLUDE = sky z1
 
-# Include CoAP resources
-#MODULES_REL += ./resources
 
 CONTIKI = /home/iot_ubuntu_intel/contiki-ng
 TARGET_LIBFILES += -lm
 # Include the CoAP implementation
 include $(CONTIKI)/Makefile.dir-variables
 MODULES += $(CONTIKI_NG_APP_LAYER_DIR)/coap
-INC += /home/iot_ubuntu_intel/.local/lib/python3.10/site-packages/emlearn
-MODULES_REL += /home/iot_ubuntu_intel/.local/lib/python3.10/site-packages/emlearn
+#INC += /home/iot_ubuntu_intel/.local/lib/python3.10/site-packages/emlearn
+#MODULES_REL += /home/iot_ubuntu_intel/.local/lib/python3.10/site-packages/emlearn
 
 # Add the utils directory
 MODULES_REL += ./resources/utils
