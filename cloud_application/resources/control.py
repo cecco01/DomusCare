@@ -93,7 +93,7 @@ class Control(Resource):
 
             cursor = self.connection.cursor()
             query = """
-            UPDATE dispositivi
+            UPDATE devices
             SET stato = %s
             WHERE nome = %s
             """
@@ -115,7 +115,7 @@ class Control(Resource):
             self.ensure_connection()
             cursor = self.connection.cursor()
             ip = str(ip)
-            query = "SELECT nome FROM dispositivi WHERE ip_address = %s"
+            query = "SELECT nome FROM devices WHERE ip_address = %s"
             cursor.execute(query, (ip,))
             result = cursor.fetchone()
             if result:

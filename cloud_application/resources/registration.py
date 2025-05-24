@@ -113,7 +113,7 @@ class Registration(Resource):
 
             if dongle_type == "actuator":
                 query = """
-                INSERT INTO dispositivi (ip_address, nome, consumo_kwh, durata)
+                INSERT INTO devices (ip_address, nome, consumo_kwh, durata)
                 VALUES (%s, %s, %s, %s)
                 """
                 name = payload.get("n")
