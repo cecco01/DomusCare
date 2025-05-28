@@ -12,8 +12,8 @@
 #define LOG_LEVEL LOG_LEVEL_APP
 #define SERVER_EP "coap://[fd00::1]:5683"  // Indirizzo del server
 
-#define MEAN 169.970005 // VALORI ANCORA DA STABILIRE
-#define STDDEV 14.283898 // VALORI ANCORA DA STABILIRE
+#define MEAN 169.970005
+#define STDDEV 14.283898 
 
 void res_solar_get_handler(coap_message_t *request, coap_message_t *response, uint8_t *buffer, uint16_t preferred_size, int32_t *offset);
 void s_handle(coap_message_t *response) {
