@@ -88,7 +88,7 @@ DELIMITER ;
 DELIMITER $$
 DROP TRIGGER IF EXISTS inserisci_tempo_attivazione;
 CREATE TRIGGER inserisci_tempo_attivazione
-BEFORE INSERT ON devices
+BEFORE UPDATE ON devices --update non insert
 FOR EACH ROW
 -- solo se il nuovo stato è 1
 BEGIN
