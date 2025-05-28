@@ -13,7 +13,7 @@ def reset_database():
     # Comandi SQL per svuotare solo le tabelle desiderate
     sql_commands = """
     TRUNCATE TABLE dongle;
-    TRUNCATE TABLE dispositivi;
+    TRUNCATE TABLE devices;
     """
 
     command = [

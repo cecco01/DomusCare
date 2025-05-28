@@ -27,12 +27,7 @@ class Registration(Resource):
             if not self.connection.is_connected():
                 raise Error("Impossibile riconnettersi al database.")
 
-    def render_GET(self, request):
-        print(f"RENDER GET")
-        print(f"Request parameters: {request.uri_query}")
-        query = request.uri_query
-        self.fetch_dongle_from_db(query)
-        return self
+ 
 
     def render_POST(self, request):
         """
@@ -118,7 +113,7 @@ class Registration(Resource):
 
             if dongle_type == "actuator":
                 query = """
-                INSERT INTO dispositivi (ip_address, nome, consumo_kwh, durata)
+                INSERT INTO devices (ip_address, nome, consumo_kwh, durata)
                 VALUES (%s, %s, %s, %s)
                 """
                 name = payload.get("n")
