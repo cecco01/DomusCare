@@ -76,7 +76,7 @@ DELIMITER ;
 DELIMITER $$
 DROP TRIGGER IF EXISTS inserisci_tempo_attivazione;
 CREATE TRIGGER inserisci_tempo_attivazione
-BEFORE UPDATE ON devices --update non insert
+BEFORE UPDATE ON devices
 FOR EACH ROW
 -- solo se il nuovo stato è 1
 BEGIN
@@ -87,6 +87,6 @@ BEGIN
         -- Altrimenti, imposta il timestamp di attivazione a NULL
         SET NEW.timestamp_attivazione = NULL;
     END IF; 
-    SET NEW.timestamp_attivazione = NOW();
+
 END$$
 DELIMITER ;

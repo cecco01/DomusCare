@@ -6,7 +6,7 @@
 #include "sys/etimer.h"
 #include "os/dev/leds.h"
 #include "coap-blocking-api.h"
-
+#include "sys/rtimer.h"
 #if PLATFORM_SUPPORTS_BUTTON_HAL
 #include "dev/button-hal.h"
 #else
@@ -73,7 +73,8 @@ void client_chunk_handler(coap_message_t *response){//
    static coap_message_t request[1];
  
    PROCESS_BEGIN();
- 
+   srand(rtimer_arch_now());
+
  #if PLATFORM_HAS_BUTTON
  #if !PLATFORM_SUPPORTS_BUTTON_HAL
    SENSORS_ACTIVATE(button_sensor);

@@ -12,7 +12,7 @@ double generate_gaussian(double mean, double stddev) {
     static double rand1, rand2;
 
     // set the seed
-    srand(time(NULL));
+    
 
     if(haveSpare) {
         haveSpare = 0;

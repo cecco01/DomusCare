@@ -6,7 +6,7 @@
 #include "sys/etimer.h"
 #include "os/dev/leds.h"
 #include "coap-blocking-api.h"
-
+#include "sys/rtimer.h"
 #if PLATFORM_SUPPORTS_BUTTON_HAL
 #include "dev/button-hal.h"
 #else
@@ -78,10 +78,13 @@ static int sampling_intervals[] = {30, 50, 100}; // varie velocità
  int status = 1;
  
  PROCESS_THREAD(SolarPw_server, ev, data){
+
    static coap_endpoint_t main_server_ep;
    static coap_message_t request[1];
  
    PROCESS_BEGIN();
+   srand(rtimer_arch_now());
+
  
  #if PLATFORM_HAS_BUTTON
  #if !PLATFORM_SUPPORTS_BUTTON_HAL

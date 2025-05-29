@@ -540,7 +540,7 @@ PROCESS_THREAD(avvia_dispositivo_process, ev, data) {
     printf("Segnale di avvio inviato al server con successo.\n");
 
     // Imposta il timer per disattivare il dispositivo dopo la durata del task
-    ctimer_set(&task_timer, durata_task * CLOCK_SECOND, disattiva_dispositivo, NULL);
+    ctimer_set(&task_timer, durata_task * 60* CLOCK_SECOND, disattiva_dispositivo, NULL);
     task_timer_started = true;
     printf("Timer impostato per disattivare il dispositivo dopo %d minuti.\n", durata_task);
 

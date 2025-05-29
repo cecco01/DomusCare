@@ -93,6 +93,7 @@ build/nrf52840/dongle/obj/solar.o: solar.c \
  /home/iot_ubuntu_intel/contiki-ng/arch/cpu/nrf52840/lib/nrf52-sdk/modules/nrfx/hal/nrf_gpio.h \
  /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-blocking-api.h \
  /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-request-state.h \
+ /home/iot_ubuntu_intel/contiki-ng/os/sys/rtimer.h \
  /home/iot_ubuntu_intel/contiki-ng/os/dev/button-hal.h \
  /home/iot_ubuntu_intel/contiki-ng/os/sys/ctimer.h \
  /home/iot_ubuntu_intel/contiki-ng/os/sys/log.h \
@@ -285,6 +286,8 @@ project-conf.h:
 /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-blocking-api.h:
 
 /home/iot_ubuntu_intel/contiki-ng/os/net/app-layer/coap/coap-request-state.h:
+
+/home/iot_ubuntu_intel/contiki-ng/os/sys/rtimer.h:
 
 /home/iot_ubuntu_intel/contiki-ng/os/dev/button-hal.h:
 

@@ -31,7 +31,7 @@ class Control(Resource):
         :return: Risposta CoAP con il risultato dell'operazione.
         """
         print(f"CONTROL: RENDER POST ")
-        print(f"Payload ricevuto grezzo: {request.payload}")
+        #print(f"Payload ricevuto grezzo: {request.payload}")
         # Fix: sostituisci la virgola con il punto solo nei numeri
         try:
             # Parsing del payload JSON

@@ -2,28 +2,16 @@ from coapthon.client.helperclient import HelperClient
 import json
 from core.database import Database
 
-def get_ip_by_name(nome):
+def get_ip_by_name(nome, conn):
     """
-    Recupera l'indirizzo IP di un dispositivo dato il suo nome.
+    Recupera l'indirizzo IP di un dispositivo dato il suo nome, usando una connessione già aperta.
     """
     try:
-        # Ottieni la connessione al database tramite la classe Database
-        db = Database()
-        conn = db.connect_db()
-        if conn is None:
-            print("Errore: impossibile connettersi al database.")
-            return None
-
         cursor = conn.cursor(dictionary=True)
-
-        # Esegui la query per ottenere l'indirizzo IP
         query = "SELECT ip_address FROM devices WHERE nome = %s"
         cursor.execute(query, (nome,))
         result = cursor.fetchone()
-
-        # Chiudi il cursore
         cursor.close()
-
         if result:
             return result["ip_address"]
         else:
@@ -37,8 +25,15 @@ def cambia_stato_dispositivo(nome, nuovo_stato, ore=0):
     """
     Cambia lo stato di un dispositivo dato il suo nome.
     """
+    # Ottieni la connessione al database tramite la classe Database
+    db = Database()
+    conn = db.connect_db()
+    if conn is None:
+        print("Errore: impossibile connettersi al database.")
+        return
+
     # Ottieni l'indirizzo IP del dispositivo
-    ip_address = get_ip_by_name(nome)
+    ip_address = get_ip_by_name(nome, conn)
     if isinstance(ip_address, str):
         ip_address = eval(ip_address)  # Converte la stringa in una tupla
 
@@ -76,13 +71,10 @@ def cambia_stato_dispositivo(nome, nuovo_stato, ore=0):
         client.stop()
 
 def rimuovi_dispositivo(nome):
-   
-    #rimuovi_dispositivo(nome):
     """
     Rimuove un dispositivo dal database.
     """
     try:
-        # Ottieni la connessione al database tramite la classe Database
         db = Database()
         conn = db.connect_db()
         if conn is None:
@@ -91,21 +83,20 @@ def rimuovi_dispositivo(nome):
 
         cursor = conn.cursor()
 
-        # Esegui la query per rimuovere il dispositivo
-      
-        
+        get_ip = get_ip_by_name(nome, conn)
+        if get_ip is None:
+            cursor.close()
+            conn.close()
+            return
+
         query = "DELETE FROM devices WHERE nome = %s"
         cursor.execute(query, (nome,))
         conn.commit()
-        #rimuovo da sensor
-        get_ip = get_ip_by_name(nome)
-        
-        query = "DELETE FROM sensor WHERE ip = %s"
+
+        query = "DELETE FROM dongle WHERE ip_address = %s"
         cursor.execute(query, (get_ip,))
         conn.commit()
 
-
-        # Chiudi il cursore e la connessione
         cursor.close()
         conn.close()
 
