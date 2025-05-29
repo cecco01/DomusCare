@@ -425,7 +425,7 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
 
     LOG_INFO("Starting SmartPlug Server\n");
 
-    leds_on(LEDS_BLUE);//test!!
+    leds_on(LEDS_BLUE);
     
     while (!is_registered) {
         /* -------------- REGISTRAZIONE --------------*/
@@ -463,7 +463,7 @@ PROCESS_THREAD(disattiva_dispositivo_process, ev, data) {
     stato_dispositivo = 0;
 
     ctimer_stop(&task_timer); // Ferma il timer automatico
-    ctimer_stop(&efficient_timer); //
+    ctimer_stop(&efficient_timer); 
     printf("Dispositivo disattivato. Stato impostato a: %d (Spento)\n", stato_dispositivo);
 
     // Configura l'endpoint del server
@@ -482,7 +482,7 @@ PROCESS_THREAD(disattiva_dispositivo_process, ev, data) {
     COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
 
     printf("Segnale di disattivazione inviato al server con successo.\n");
-//AGGIUNTA (FORSE OPZIONALE?)
+
     task_timer_started = false;
 
     PROCESS_END();

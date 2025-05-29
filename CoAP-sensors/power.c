@@ -25,7 +25,7 @@ static int max_registration_retry = MAX_REGISTRATION_RETRY;
 
 extern struct process post_to_control_process;
 
-void client_chunk_handler(coap_message_t *response){//
+void client_chunk_handler(coap_message_t *response){
   if (response == NULL){
     LOG_ERR("Request timed out\n");
   }
@@ -111,8 +111,6 @@ void client_chunk_handler(coap_message_t *response){//
    update_led_color();
    etimer_set(&e_timer, CLOCK_SECOND * sampling_intervals[current_sampling_index]);
  
-   //etimer_set(&e_timer, CLOCK_SECOND * 30);
-   //etimer_set(&e_timer, CLOCK_SECOND * 310);
  
    while (1){
      PROCESS_WAIT_EVENT();
@@ -131,7 +129,7 @@ void client_chunk_handler(coap_message_t *response){//
      }
      else if (ev == sensors_event && data == &button_sensor){
  #endif
-      // logica dle cambio di velocità e led
+      // logica del cambio di velocità e led
     current_sampling_index = (current_sampling_index + 1) % 3;
     update_led_color();
     LOG_INFO("Nuova velocità di campionamento: %d secondi\n", sampling_intervals[current_sampling_index]);
