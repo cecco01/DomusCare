@@ -25,7 +25,7 @@ class Control(Resource):
     
     def render_POST(self, request):
         """
-        Gestisce le richieste POST per aggiornare lo stato di un dispositivo o donglee.
+        Gestisce le richieste POST per aggiornare lo stato di un dispositivo o dongle.
 
         :param request: Richiesta CoAP ricevuta.
         :return: Risposta CoAP con il risultato dell'operazione.

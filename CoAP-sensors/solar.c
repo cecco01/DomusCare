@@ -121,9 +121,7 @@ static int sampling_intervals[] = {30, 50, 100}; // varie velocità
    }
  
    LOG_INFO("REGISTRATION SUCCESS\n");
-   //leds_single_off(LEDS_YELLOW);
- 
-  // etimer_set(&e_timer, CLOCK_SECOND * 30);
+  
 
    update_led_color();
    etimer_set(&e_timer, CLOCK_SECOND * sampling_intervals[current_sampling_index]);
@@ -132,8 +130,7 @@ static int sampling_intervals[] = {30, 50, 100}; // varie velocità
      PROCESS_WAIT_EVENT();
      if (ev == PROCESS_EVENT_TIMER && data == &e_timer){
        if (status == 1){
-        // res_solar.trigger();//serve un coap client registrato alla risorsa
-         //LOG_INFO("res_solar event triggered\n");
+        
           process_start(&post_to_solar_process, NULL);
         }
        etimer_reset(&e_timer);

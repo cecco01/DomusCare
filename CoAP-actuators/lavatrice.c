@@ -426,7 +426,7 @@ PROCESS_THREAD(registra_dispositivo_process, ev, data) {
 
     LOG_INFO("Starting SmartPlug Server\n");
 
-    leds_single_on(LEDS_YELLOW);//test!!
+    leds_single_on(LEDS_YELLOW);
     
     while (!is_registered) {
         /* -------------- REGISTRAZIONE --------------*/
