@@ -54,18 +54,6 @@ CREATE TABLE devices (
 SET GLOBAL event_scheduler = ON;
 
 -- Crea un evento per aggiornare lo stato dei dispositivi
-DELIMITER $$
-DROP EVENT IF EXISTS aggiorna_stato_dispositivi;
-CREATE EVENT aggiorna_stato_dispositivi
-ON SCHEDULE EVERY 1 MINUTE
-DO
-BEGIN
-    UPDATE dispositivi
-    SET stato = 0, timestamp_attivazione = NULL
-    WHERE stato = 1 AND TIMESTAMPDIFF(MINUTE, timestamp_attivazione, NOW()) >= durata;
-END$$
-
-DELIMITER ;
 
 -- Creazione del trigger per aggiornare il consumo totale
 DELIMITER $$
