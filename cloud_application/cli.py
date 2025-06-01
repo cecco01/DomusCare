@@ -29,6 +29,7 @@ def cambia_stato_dispositivo(nome, nuovo_stato, ore=0):
     db = Database()
     conn = db.connect_db()
     if conn is None:
+        
         print("Errore: impossibile connettersi al database.")
         return
 
@@ -139,6 +140,7 @@ def recupera_lista_attuatori():
 
         # Chiudi il cursore
         cursor.close()
+        conn.close()
     except Exception as e:
         print(f"Errore durante il recupero degli attuatori: {e}")
 
