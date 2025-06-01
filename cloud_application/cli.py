@@ -34,6 +34,9 @@ def cambia_stato_dispositivo(nome, nuovo_stato, ore=0):
 
     # Ottieni l'indirizzo IP del dispositivo
     ip_address = get_ip_by_name(nome, conn)
+    if ip_address is None:
+        print("Errore: dispositivo non trovato.")
+        return
     if isinstance(ip_address, str):
         ip_address = eval(ip_address)  # Converte la stringa in una tupla
 
@@ -167,8 +170,10 @@ def remote_cli():
             if nuovo_stato == 2:
                 ore = int(input("Inserisci entro quante ore deve essere completata la task : ").strip()) if nuovo_stato == 2 else 0
                 cambia_stato_dispositivo(nome, nuovo_stato, ore)
-            else:
+            elif nuovo_stato in [0, 1]:
                 cambia_stato_dispositivo(nome, nuovo_stato, 0)
+            else:
+                print("Stato non valido. Usa 2 per Pronto, 1 per Attivo, 0 per Inattivo.")
         elif scelta == "3":
             nome = input("Inserisci il nome del dispositivo da rimuovere: ").strip()
             rimuovi_dispositivo(nome)
