@@ -38,7 +38,7 @@ static int numero_ripetizioni = 0;  // Dichiarazione globale
 static int tempo_limite = 0;  // Tempo in ore entro il quale il task deve essere completato
 
 PROCESS(avvia_dispositivo_process, "Avvia Dispositivo Process");
-#define INTERVALLO_PREDIZIONE 60 // 15 minutes in seconds
+#define INTERVALLO_PREDIZIONE 900 // 15 minutes in seconds
 static float consumo_lavatrice = 1.3;
 PROCESS(registra_dispositivo_process, "Registra Dispositivo Process");
 PROCESS(disattiva_dispositivo_process, "Disattiva Dispositivo Process");
@@ -352,19 +352,13 @@ PROCESS_THREAD(smartplug_process, ev, data) {
     etimer_set(&clock_timer, 60 * CLOCK_SECOND);
     while (1) {
         PROCESS_YIELD(); // Così il processo si "sveglia" anche per la scadenza di qualsiasi timer
-//NB: PROCESS_YIELD() è meglio di PROCESS_WAIT_EVENT() in questo caso, perché si "sveglia" anche per la scadenza di timer che NON generano eventi (come il ctimer).
     if (etimer_expired(&clock_timer)) {
         LOG_INFO("Timer scaduto, aggiornamento orologio...\n");
         aggiorna_orologio();
         etimer_reset(&clock_timer);
     }
 
-    /*if (task_timer_started && etimer_expired(&task_timer)) {
-        LOG_INFO("Task timer scaduto, disattivazione dispositivo...\n");
-        disattiva_dispositivo();
-        etimer_stop(&task_timer);
-        task_timer_started = false;
-    }*/
+
   }
     PROCESS_END();
 }
@@ -483,7 +477,6 @@ PROCESS_THREAD(disattiva_dispositivo_process, ev, data) {
     COAP_BLOCKING_REQUEST(&server_endpoint, request, client_chunk_handler);
 
     printf("Segnale di disattivazione inviato al server con successo.\n");
-//AGGIUNTA (FORSE OPZIONALE?)
     task_timer_started = false;
 
     PROCESS_END();
@@ -540,7 +533,7 @@ PROCESS_THREAD(avvia_dispositivo_process, ev, data) {
     printf("Segnale di avvio inviato al server con successo.\n");
 
     // Imposta il timer per disattivare il dispositivo dopo la durata del task
-    ctimer_set(&task_timer, durata_task * 60* CLOCK_SECOND, disattiva_dispositivo, NULL);
+    ctimer_set(&task_timer, durata_task * 3600 * CLOCK_SECOND, disattiva_dispositivo, NULL);
     task_timer_started = true;
     printf("Timer impostato per disattivare il dispositivo dopo %d minuti.\n", durata_task);
 
